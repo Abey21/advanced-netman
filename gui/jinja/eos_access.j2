@@ -1,0 +1,69 @@
+hostname {{ device.name }}
+
+username admin privilege 15 role network-admin secret {{ device.admin_secret | default('admin') }}
+
+management api http-commands
+   no shutdown
+
+daemon TerminAttr
+   exec /usr/bin/TerminAttr -ingestgrpcurl=unix:/var/run/ingestgrpc.sock -taillogs --ingestauth=key,user:user --gnmi -grpc
+
+snmp-server community public ro
+{% if device.snmp_host %}snmp-server host {{ device.snmp_host }} version 2c public{% endif %}
+
+{% for vlan in device.vlans %}
+vlan {{ vlan.id }}
+   name {{ vlan.name }}
+{% endfor %}
+
+{% for interface in device.interfaces %}
+interface {{ interface.name }}
+{% if interface.switchport_mode %}   switchport mode {{ interface.switchport_mode }}
+{% else %}   no switchport{% endif %}
+{% if interface.ipv4 %}   ip address {{ interface.ipv4 }}{% endif %}
+{% if interface.ipv6 %}   ipv6 address {{ interface.ipv6 }}{% endif %}
+{% if interface.mtu %}   mtu {{ interface.mtu }}{% endif %}
+{% if interface.speed %}   speed forced {{ interface.speed }}{% endif %}
+{% endfor %}
+
+{% for vlan in device.vlans %}
+interface Vlan{{ vlan.id }}
+{% if vlan.mtu %}   mtu {{ vlan.mtu }}{% endif %}
+{% if vlan.ipv4_subnet %}   ip address {{ vlan.ipv4_subnet }}{% endif %}
+{% if vlan.dhcp_enabled %}   dhcp server ipv4
+   dhcp server ipv6{% endif %}
+{% if vlan.ipv6_subnet %}   ipv6 enable
+   ipv6 address {{ vlan.ipv6_subnet }}{% endif %}
+{% if vlan.ospfv3 and vlan.ospfv3.area is not none %}   ospfv3 ipv6 area {{ vlan.ospfv3.area }}{% endif %}
+{% if vlan.ipv4_virtual_router_address %}   ip virtual-router address {{ vlan.ipv4_virtual_router_address }}{% endif %}
+{% if vlan.ipv6_virtual_router_address %}   ipv6 virtual-router address {{ vlan.ipv6_virtual_router_address }}{% endif %}
+!
+{% endfor %}
+
+ip virtual-router mac-address 00:1c:73:00:00:99
+ip routing
+ipv6 unicast-routing
+
+{% for route in device.routes.static %}ip route {{ route.prefix }} {{ route.next_hop }}
+{% endfor %}
+{% for route in device.routes.ipv6_static %}ipv6 route {{ route.prefix }} {{ route.next_hop }}
+{% endfor %}
+
+{% if device.routing_protocols.ospf %}
+router ospf {{ device.routing_protocols.ospf.id }}
+{% if device.routing_protocols.ospf.router_id %}   router-id {{ device.routing_protocols.ospf.router_id }}{% endif %}
+{% for n in device.routing_protocols.ospf.networks %}   network {{ n.prefix | ospf_net }} area {{ n.area }}
+{% endfor %}   max-lsa 12000
+{% endif %}
+
+router ospfv3
+   address-family ipv6
+
+{% if device.routing_protocols.rip and device.routing_protocols.rip.networks %}
+router rip
+   version 2
+{% for n in device.routing_protocols.rip.networks %}   network {{ n.prefix }}
+{% endfor %}   no auto-summary
+   no shutdown
+{% endif %}
+end

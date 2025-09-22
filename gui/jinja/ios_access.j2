@@ -1,0 +1,34 @@
+hostname {{ device.name }}
+!
+{% for vlan in device.vlans %}
+vlan {{ vlan.id }}
+ name {{ vlan.name }}
+{% endfor %}
+!
+{% for interface in device.interfaces %}
+interface {{ interface.name }}
+{% if interface.switchport_mode %} switchport mode {{ interface.switchport_mode }}
+{% else %} no switchport{% endif %}
+{% if interface.ipv4 %} ip address {{ interface.ipv4 }}{% endif %}
+{% if interface.ipv6 %} ipv6 address {{ interface.ipv6 }}{% endif %}
+{% endfor %}
+!
+{% for vlan in device.vlans %}
+interface Vlan{{ vlan.id }}
+{% if vlan.ipv4_subnet %} ip address {{ vlan.ipv4_subnet }}{% endif %}
+{% if vlan.ipv6_subnet %} ipv6 enable
+ ipv6 address {{ vlan.ipv6_subnet }}{% endif %}
+{% endfor %}
+!
+ip routing
+ipv6 unicast-routing
+{% for r in device.routes.static %}ip route {{ r.prefix }} {{ r.next_hop }}
+{% endfor %}
+{% for r in device.routes.ipv6_static %}ipv6 route {{ r.prefix }} {{ r.next_hop }}
+{% endfor %}
+{% if device.routing_protocols.ospf %}
+router ospf {{ device.routing_protocols.ospf.id }}
+{% for n in device.routing_protocols.ospf.networks %} network {{ n.prefix | ospf_net }} area {{ n.area }}
+{% endfor %}
+{% endif %}
+end

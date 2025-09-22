@@ -1,0 +1,29 @@
+hostname {{ device.name }}
+!
+{% for interface in device.interfaces %}
+interface {{ interface.name }}
+{% if interface.switchport_mode %} switchport mode {{ interface.switchport_mode }}
+{% else %} no switchport{% endif %}
+{% if interface.ipv4 %} ip address {{ interface.ipv4 }}{% endif %}
+{% if interface.ipv6 %} ipv6 address {{ interface.ipv6 }}{% endif %}
+{% endfor %}
+!
+ip routing
+ipv6 unicast-routing
+{% for r in device.routes.static %}ip route {{ r.prefix }} {{ r.next_hop }}
+{% endfor %}
+{% for r in device.routes.ipv6_static %}ipv6 route {{ r.prefix }} {{ r.next_hop }}
+{% endfor %}
+{% if device.routing_protocols.ospf %}
+router ospf {{ device.routing_protocols.ospf.id }}
+{% for n in device.routing_protocols.ospf.networks %} network {{ n.prefix | ospf_net }} area {{ n.area }}
+{% endfor %}
+{% endif %}
+{% if device.routing_protocols.bgp and device.routing_protocols.bgp.as %}
+router bgp {{ device.routing_protocols.bgp.as }}
+{% for nei in device.routing_protocols.bgp.neighbors %} neighbor {{ nei.ip }} remote-as {{ nei.remote_as }}
+{% endfor %}
+{% for net in device.routing_protocols.bgp.networks %} network {{ net }}
+{% endfor %}
+{% endif %}
+end

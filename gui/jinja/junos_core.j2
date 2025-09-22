@@ -1,0 +1,25 @@
+system { host-name {{ device.name }}; }
+interfaces {
+{% for interface in device.interfaces -%}
+  {{ interface.name }} {
+    unit 0 {
+      family inet { {% if interface.ipv4 %} address {{ interface.ipv4 }}; {% endif %} }
+      family inet6 { {% if interface.ipv6 %} address {{ interface.ipv6 }}; {% endif %} }
+    }
+  }
+{% endfor -%}
+}
+protocols {
+{% if device.routing_protocols.ospf -%}
+  ospf { {% for n in device.routing_protocols.ospf.networks -%}
+    area {{ n.area }} { network {{ n.prefix }}; }
+  {% endfor -%} }
+{% endif -%}
+{% if device.routing_protocols.bgp and device.routing_protocols.bgp.as -%}
+  bgp { group CORE { type external;
+    {% for nei in device.routing_protocols.bgp.neighbors -%}
+    neighbor {{ nei.ip }} { peer-as {{ nei.remote_as }}; }
+    {% endfor -%}
+  } }
+{% endif -%}
+}

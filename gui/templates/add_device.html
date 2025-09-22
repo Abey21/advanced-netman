@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Device</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    :root{
+      --bg:#0b0d12;--card:#121826;--text:#e6e6e6;--border:#1f2937;
+      --input:#0b0d12;--input-border:#334155;--primary:#3b82f6;--primary-hover:#2563eb;
+      --success:#10b981;--success-hover:#059669;--danger:#ef4444;--danger-hover:#dc2626;
+    }
+    body{background:var(--bg);color:var(--text)}
+    .navbar{margin-bottom:20px;background:var(--card)!important;border-bottom:1px solid var(--border)}
+    .navbar .navbar-brand,.navbar .nav-link{color:var(--text)!important}
+    .card{background:var(--card);border:1px solid var(--border)}
+    .form-control{background:var(--input);color:var(--text);border:1px solid var(--input-border)}
+    .btn-primary{background:var(--primary);border-color:var(--primary)}
+    .btn-primary:hover{background:var(--primary-hover);border-color:var(--primary-hover)}
+    .btn-success{background:var(--success);border-color:var(--success)}
+    .btn-success:hover{background:var(--success-hover);border-color:var(--success-hover)}
+    .remove-btn{display:inline-block;padding:7px 7px;background-color:#BA110C;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:2px;margin-right:10px}
+    .remove-btn:hover{background-color:#800808}
+    .button-container{margin-top:10px;display:flex;align-items:center;gap:10px}
+    .hidden-section{display:none}
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <a class="navbar-brand" href="/">NSoT</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav">
+      <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+      <li class="nav-item"><a class="nav-link" href="/grafana" target="_blank">Grafana</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+  <div id="msg"></div>
+  <div class="card">
+    <div class="card-body">
+      <h4 class="card-title">Add New Device</h4>
+      <form id="addForm" action="/add-device" method="POST">
+        <div class="form-group">
+          <label>Device Name *</label>
+          <input type="text" class="form-control" name="deviceName" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label>Vendor *</label>
+            <select class="form-control" name="vendor" required>
+              {% for v in vendors %}<option value="{{v}}">{{v}}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group col-md-4">
+            <label>Router Type *</label>
+            <select class="form-control" id="routerType" name="routerType" onchange="toggleForms()" required>
+              <option value="">Select Type</option>
+              <option value="Access">Access</option>
+              <option value="Core">Core</option>
+            </select>
+          </div>
+          <div class="form-group col-md-4">
+            <label>WAN IP (Mgmt) *</label>
+            <input type="text" class="form-control" name="wanIp" placeholder="e.g. 192.168.100.2/24" required>
+          </div>
+        </div>
+
+        <!-- Access Form -->
+        <div id="accessForm" style="display:none;">
+          <h5>Access Router Configuration</h5>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target=".vlanSection" aria-expanded="false">
+              <b>VLAN Configuration</b>
+            </button>
+          </div>
+          <div class="vlanSection collapse">
+            <div class="vlans">
+              <div class="vlan">
+                <h6>VLAN 1</h6>
+                <div class="form-group"><label>VLAN ID</label><input type="number" class="form-control" name="vlanId[]" ></div>
+                <div class="form-group"><label>VLAN Name</label><input type="text" class="form-control" name="vlanName[]"></div>
+                <div class="form-group"><label>IPv4 Subnet</label><input type="text" class="form-control" name="ipv4Subnet[]" placeholder="10.10.10.0/24"></div>
+                <div class="form-group"><label>IPv6 Subnet</label><input type="text" class="form-control" name="ipv6Subnet[]" placeholder="2001:db8:10::/64"></div>
+                <div class="form-group"><label>DHCP Enabled</label>
+                  <select class="form-control" name="dhcpEnabled[]" onchange="toggleDHCPOptions(this)"><option value="false">No</option><option value="true">Yes</option></select>
+                </div>
+                <div class="form-group hidden-section"><label>DHCPv4 Range Start</label><input type="text" class="form-control dhcpv4" name="dhcpRangeStart[]"></div>
+                <div class="form-group hidden-section"><label>DHCPv4 Range End</label><input type="text" class="form-control dhcpv4" name="dhcpRangeEnd[]"></div>
+                <div class="form-group hidden-section"><label>Default Gateway (IPv4)</label><input type="text" class="form-control dhcpv4" name="defaultGateway[]"></div>
+                <div class="form-group hidden-section"><label>DHCPv6 Range Start</label><input type="text" class="form-control dhcpv6" name="dhcpv6RangeStart[]"></div>
+                <div class="form-group hidden-section"><label>DHCPv6 Range End</label><input type="text" class="form-control dhcpv6" name="dhcpv6RangeEnd[]"></div>
+                <div class="form-group"><label>IPv4 Virtual Router Address</label><input type="text" class="form-control" name="ipv4VRouter[]"></div>
+                <div class="form-group"><label>IPv6 Virtual Router Address</label><input type="text" class="form-control" name="ipv6VRouter[]"></div>
+                <div class="form-group"><label>OSPFv3 Area</label><input type="text" class="form-control" name="ospfv3Area[]"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary addVLAN" onclick="addVLAN()">Add VLAN</button>
+                  <button type="button" class="remove-btn" onclick="removeVLAN(this)">Remove VLAN</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target=".interfaceSection" aria-expanded="false">
+              <b>Interface Configuration</b>
+            </button>
+          </div>
+          <div class="interfaceSection collapse">
+            <div class="interfaces">
+              <div class="interface">
+                <h6>Interface 1</h6>
+                <div class="form-group"><label>Interface Name</label><input type="text" class="form-control" name="interfaceName[]" placeholder="Ethernet1"></div>
+                <div class="form-group"><label>IPv4 Address</label><input type="text" class="form-control" name="ipv4[]" placeholder="172.16.10.2/30"></div>
+                <div class="form-group"><label>IPv6 Address</label><input type="text" class="form-control" name="ipv6[]" placeholder="2001:db8::2/64"></div>
+                <div class="form-group"><label>MTU</label><input type="text" class="form-control" name="mtu[]"></div>
+                <div class="form-group"><label>Switchport Mode</label><input type="text" class="form-control" name="switchportMode[]" placeholder="access|trunk|routed"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary addInterface" onclick="addInterface()">Add Interface</button>
+                  <button type="button" class="remove-btn" onclick="removeInterface(this)">Remove Interface</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target=".staticRoutesSection" aria-expanded="false">
+              <b>Static Routes</b>
+            </button>
+          </div>
+          <div class="staticRoutesSection collapse">
+            <div class="staticRoutes">
+              <div class="route">
+                <div class="form-group"><label>Static Route Prefix</label><input type="text" class="form-control" name="staticPrefix[]" placeholder="0.0.0.0/0"></div>
+                <div class="form-group"><label>Next Hop</label><input type="text" class="form-control" name="staticNextHop[]" placeholder="172.16.10.1"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary addStaticRoute" onclick="addStaticRoute()">Add Static Route</button>
+                  <button type="button" class="remove-btn" onclick="removeStaticRoute(this)">Remove Route</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target=".ipv6StaticRoutesSection" aria-expanded="false">
+              <b>IPv6 Static Routes</b>
+            </button>
+          </div>
+          <div class="ipv6StaticRoutesSection collapse">
+            <div class="ipv6StaticRoutes">
+              <div class="ipv6Route">
+                <div class="form-group"><label>IPv6 Static Prefix</label><input type="text" class="form-control" name="ipv6StaticPrefix[]"></div>
+                <div class="form-group"><label>IPv6 Next Hop</label><input type="text" class="form-control" name="ipv6StaticNextHop[]"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary addIPv6StaticRoute" onclick="addIPv6StaticRoute()">Add IPv6 Static Route</button>
+                  <button type="button" class="remove-btn" onclick="removeIPv6StaticRoute(this)">Remove IPv6 Static Route</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target=".ospfSection" aria-expanded="false">
+              <b>OSPF (IPv4)</b>
+            </button>
+          </div>
+          <div class="ospfSection collapse">
+            <div class="form-group"><label>OSPF Process ID</label><input type="text" class="form-control" name="ospfId" placeholder="1"></div>
+            <div class="ospfNetworks">
+              <div class="ospfNetwork">
+                <div class="form-group"><label>OSPF Network Prefix</label><input type="text" class="form-control" name="ospfNetwork[]" placeholder="10.10.10.0/24 or 10.10.10.0 0.0.0.255"></div>
+                <div class="form-group"><label>OSPF Area</label><input type="text" class="form-control" name="ospfArea[]" placeholder="0"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary addOSPFNetwork" onclick="addOSPFNetwork()">Add OSPF Network</button>
+                  <button type="button" class="remove-btn" onclick="removeOSPFNetwork(this)">Remove OSPF Network</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#ripSection" aria-expanded="false">
+              <b>RIP (optional)</b>
+            </button>
+          </div>
+          <div id="ripSection" class="collapse">
+            <div id="ripNetworks">
+              <div class="ripNetwork">
+                <div class="form-group"><label>RIP Network</label><input type="text" class="form-control" name="ripNetwork[]"></div>
+                <button type="button" class="btn btn-primary" onclick="addRIPNetwork()">Add RIP Network</button>
+                <button type="button" class="remove-btn" onclick="removeRIPNetwork(this)">Remove RIP Network</button>
+              </div>
+              <br/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Core Form -->
+        <div id="coreForm" style="display:none;">
+          <h5>Core Router Configuration</h5>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#vlanSectionCore" aria-expanded="false">
+              <b>VLANs</b>
+            </button>
+          </div>
+          <div id="vlanSectionCore" class="collapse">
+            <div id="vlansCore">
+              <div class="vlanCore">
+                <h6>VLAN 1</h6>
+                <div class="form-group"><label>VLAN ID</label><input type="number" class="form-control" name="vlanIdCore[]"></div>
+                <div class="form-group"><label>VLAN Name</label><input type="text" class="form-control" name="vlanNameCore[]"></div>
+                <div class="form-group"><label>IPv4 Subnet</label><input type="text" class="form-control" name="ipv4SubnetCore[]"></div>
+                <div class="form-group"><label>IPv6 Subnet</label><input type="text" class="form-control" name="ipv6SubnetCore[]"></div>
+                <div class="form-group"><label>OSPFv3 Area</label><input type="text" class="form-control" name="ospfv3AreaCore[]"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary" onclick="addVLANCore()">Add VLAN</button>
+                  <button type="button" class="remove-btn" onclick="removeVLANCore(this)">Remove VLAN</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#interfaceSectionCore" aria-expanded="false">
+              <b>Interfaces</b>
+            </button>
+          </div>
+          <div id="interfaceSectionCore" class="collapse">
+            <div id="interfacesCore">
+              <div class="interfaceCore">
+                <h6>Interface 1</h6>
+                <div class="form-group"><label>Interface Name</label><input type="text" class="form-control" name="interfaceNameCore[]" placeholder="Ethernet1"></div>
+                <div class="form-group"><label>Switchport Mode</label><input type="text" class="form-control" name="switchportModeCore[]" placeholder="access|trunk|routed"></div>
+                <div class="form-group"><label>IPv4 Address</label><input type="text" class="form-control" name="ipv4Core[]"></div>
+                <div class="form-group"><label>IPv6 Address</label><input type="text" class="form-control" name="ipv6Core[]"></div>
+                <div class="form-group"><label>OSPFv3 Area</label><input type="text" class="form-control" name="ospfv3AreaInterfaceCore[]"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary" onclick="addInterfaceCore()">Add Interface</button>
+                  <button type="button" class="remove-btn" onclick="removeInterfaceCore(this)">Remove Interface</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#staticRoutesSectionCore" aria-expanded="false">
+              <b>Static Routes</b>
+            </button>
+          </div>
+          <div id="staticRoutesSectionCore" class="collapse">
+            <div id="staticRoutesCore">
+              <div class="routeCore">
+                <h6>Static Route 1</h6>
+                <div class="form-group"><label>Static Route Prefix</label><input type="text" class="form-control" name="staticPrefixCore[]"></div>
+                <div class="form-group"><label>Static Route Next Hop</label><input type="text" class="form-control" name="staticNextHopCore[]"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary" onclick="addStaticRouteCore()">Add Static Route</button>
+                  <button type="button" class="remove-btn" onclick="removeStaticRouteCore(this)">Remove Static Route</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#ipv6StaticRoutesSectionCore" aria-expanded="false">
+              <b>IPv6 Static Routes</b>
+            </button>
+          </div>
+          <div id="ipv6StaticRoutesSectionCore" class="collapse">
+            <div id="ipv6StaticRoutesCore">
+              <div class="ipv6RouteCore">
+                <h6>IPv6 Static Route 1</h6>
+                <div class="form-group"><label>IPv6 Static Prefix</label><input type="text" class="form-control" name="ipv6StaticPrefixCore[]"></div>
+                <div class="form-group"><label>IPv6 Next Hop</label><input type="text" class="form-control" name="ipv6StaticNextHopCore[]"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary" onclick="addIPv6StaticRouteCore()">Add IPv6 Static Route</button>
+                  <button type="button" class="remove-btn" onclick="removeIPv6StaticRouteCore(this)">Remove IPv6 Static Route</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#ospfSectionCore" aria-expanded="false">
+              <b>OSPF (IPv4)</b>
+            </button>
+          </div>
+          <div id="ospfSectionCore" class="collapse">
+            <div id="ospfNetworksCore">
+              <div class="ospfNetworkCore">
+                <h6>OSPF Network 1</h6>
+                <div class="form-group"><label>OSPF Network Prefix</label><input type="text" class="form-control" name="ospfNetworkCore[]" placeholder="10.0.0.0/8 or 10.0.0.0 0.255.255.255"></div>
+                <div class="form-group"><label>OSPF Area</label><input type="text" class="form-control" name="ospfAreaCore[]"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary" onclick="addOSPFNetworkCore()">Add OSPF Network</button>
+                  <button type="button" class="remove-btn" onclick="removeOSPFNetworkCore(this)">Remove OSPF Network</button>
+                </div>
+                <br/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#bgpSectionCore" aria-expanded="false">
+              <b>BGP</b>
+            </button>
+          </div>
+          <div id="bgpSectionCore" class="collapse">
+            <div class="form-group"><label>Local AS</label><input type="text" class="form-control" name="bgpAsCore" placeholder="65010"></div>
+            <div id="bgpNeighborsCore">
+              <div class="bgpNeighborCore">
+                <h6>Neighbor 1</h6>
+                <div class="form-group"><label>Neighbor IP</label><input type="text" class="form-control" name="neighborIpCore[]"></div>
+                <div class="form-group"><label>Remote AS</label><input type="text" class="form-control" name="remoteAsCore[]"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary" onclick="addBGPNeighborCore()">Add Neighbor</button>
+                  <button type="button" class="remove-btn" onclick="removeBGPNeighborCore(this)">Remove Neighbor</button>
+                </div>
+              </div>
+            </div>
+            <div id="bgpNetworksCore" class="mt-3">
+              <div class="bgpNetworkCore">
+                <h6>Advertised Network 1</h6>
+                <div class="form-group"><label>Network Prefix</label><input type="text" class="form-control" name="bgpNetworkPrefixCore[]" placeholder="5.5.5.5/32"></div>
+                <div class="button-container">
+                  <button type="button" class="btn btn-primary" onclick="addBGPNetworkCore()">Add Network</button>
+                  <button type="button" class="remove-btn" onclick="removeBGPNetworkCore(this)">Remove Network</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-success mt-2">Save</button>
+        <a href="/" class="btn btn-primary mt-2">Back</a>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+function toggleForms(){
+  const t = document.getElementById('routerType').value;
+  document.getElementById('accessForm').style.display = (t==='Access')?'block':'none';
+  document.getElementById('coreForm').style.display = (t==='Core')?'block':'none';
+}
+function toggleDHCPOptions(sel){
+  const s = sel.closest('.vlan');
+  const on = sel.value === 'true';
+  s.querySelectorAll('.dhcpv4').forEach(e=>e.closest('.form-group').style.display = on?'block':'none');
+  s.querySelectorAll('.dhcpv6').forEach(e=>e.closest('.form-group').style.display = on?'block':'none');
+}
+function removeVLAN(el){ el.closest('.vlan').remove(); }
+function removeInterface(el){ el.closest('.interface').remove(); }
+function removeStaticRoute(el){ el.closest('.route').remove(); }
+function removeIPv6StaticRoute(el){ el.closest('.ipv6Route').remove(); }
+function removeOSPFNetwork(el){ el.closest('.ospfNetwork').remove(); }
+function removeRIPNetwork(el){ el.closest('.ripNetwork').remove(); }
+function removeVLANCore(el){ el.closest('.vlanCore').remove(); }
+function removeInterfaceCore(el){ el.closest('.interfaceCore').remove(); }
+function removeStaticRouteCore(el){ el.closest('.routeCore').remove(); }
+function removeIPv6StaticRouteCore(el){ el.closest('.ipv6RouteCore').remove(); }
+function removeOSPFNetworkCore(el){ el.closest('.ospfNetworkCore').remove(); }
+function removeBGPNeighborCore(el){ el.closest('.bgpNeighborCore').remove(); }
+function removeBGPNetworkCore(el){ el.closest('.bgpNetworkCore').remove(); }
+
+function addVLAN(){
+  const c = document.querySelector('.vlans');
+  const idx = c.getElementsByClassName('vlan').length+1;
+  c.insertAdjacentHTML('beforeend', `
+  <div class="vlan"><h6>VLAN ${idx}</h6>
+    <div class="form-group"><label>VLAN ID</label><input type="number" class="form-control" name="vlanId[]"></div>
+    <div class="form-group"><label>VLAN Name</label><input type="text" class="form-control" name="vlanName[]"></div>
+    <div class="form-group"><label>IPv4 Subnet</label><input type="text" class="form-control" name="ipv4Subnet[]"></div>
+    <div class="form-group"><label>IPv6 Subnet</label><input type="text" class="form-control" name="ipv6Subnet[]"></div>
+    <div class="form-group"><label>DHCP Enabled</label>
+      <select class="form-control" name="dhcpEnabled[]" onchange="toggleDHCPOptions(this)"><option value="false">No</option><option value="true">Yes</option></select>
+    </div>
+    <div class="form-group hidden-section"><label>DHCPv4 Range Start</label><input type="text" class="form-control dhcpv4" name="dhcpRangeStart[]"></div>
+    <div class="form-group hidden-section"><label>DHCPv4 Range End</label><input type="text" class="form-control dhcpv4" name="dhcpRangeEnd[]"></div>
+    <div class="form-group hidden-section"><label>Default Gateway (IPv4)</label><input type="text" class="form-control dhcpv4" name="defaultGateway[]"></div>
+    <div class="form-group hidden-section"><label>DHCPv6 Range Start</label><input type="text" class="form-control dhcpv6" name="dhcpv6RangeStart[]"></div>
+    <div class="form-group hidden-section"><label>DHCPv6 Range End</label><input type="text" class="form-control dhcpv6" name="dhcpv6RangeEnd[]"></div>
+    <div class="form-group"><label>IPv4 Virtual Router Address</label><input type="text" class="form-control" name="ipv4VRouter[]"></div>
+    <div class="form-group"><label>IPv6 Virtual Router Address</label><input type="text" class="form-control" name="ipv6VRouter[]"></div>
+    <div class="form-group"><label>OSPFv3 Area</label><input type="text" class="form-control" name="ospfv3Area[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary addVLAN" onclick="addVLAN()">Add VLAN</button>
+      <button type="button" class="remove-btn" onclick="removeVLAN(this)">Remove VLAN</button></div><br/>
+  </div>`);
+}
+function addInterface(){
+  const c = document.querySelector('.interfaces');
+  const idx = c.getElementsByClassName('interface').length+1;
+  c.insertAdjacentHTML('beforeend', `
+  <div class="interface"><h6>Interface ${idx}</h6>
+    <div class="form-group"><label>Interface Name</label><input type="text" class="form-control" name="interfaceName[]"></div>
+    <div class="form-group"><label>IPv4 Address</label><input type="text" class="form-control" name="ipv4[]"></div>
+    <div class="form-group"><label>IPv6 Address</label><input type="text" class="form-control" name="ipv6[]"></div>
+    <div class="form-group"><label>MTU</label><input type="text" class="form-control" name="mtu[]"></div>
+    <div class="form-group"><label>Switchport Mode</label><input type="text" class="form-control" name="switchportMode[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary addInterface" onclick="addInterface()">Add Interface</button>
+      <button type="button" class="remove-btn" onclick="removeInterface(this)">Remove Interface</button></div><br/>
+  </div>`);
+}
+function addStaticRoute(){
+  const c = document.querySelector('.staticRoutes');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="route">
+    <div class="form-group"><label>Static Route Prefix</label><input type="text" class="form-control" name="staticPrefix[]"></div>
+    <div class="form-group"><label>Next Hop</label><input type="text" class="form-control" name="staticNextHop[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary addStaticRoute" onclick="addStaticRoute()">Add Static Route</button>
+      <button type="button" class="remove-btn" onclick="removeStaticRoute(this)">Remove Route</button></div><br/>
+  </div>`);
+}
+function addIPv6StaticRoute(){
+  const c = document.querySelector('.ipv6StaticRoutes');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="ipv6Route">
+    <div class="form-group"><label>IPv6 Static Prefix</label><input type="text" class="form-control" name="ipv6StaticPrefix[]"></div>
+    <div class="form-group"><label>IPv6 Next Hop</label><input type="text" class="form-control" name="ipv6StaticNextHop[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary addIPv6StaticRoute" onclick="addIPv6StaticRoute()">Add IPv6 Static Route</button>
+      <button type="button" class="remove-btn" onclick="removeIPv6StaticRoute(this)">Remove IPv6 Static Route</button></div><br/>
+  </div>`);
+}
+function addOSPFNetwork(){
+  const c = document.querySelector('.ospfNetworks');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="ospfNetwork">
+    <div class="form-group"><label>OSPF Network Prefix</label><input type="text" class="form-control" name="ospfNetwork[]"></div>
+    <div class="form-group"><label>OSPF Area</label><input type="text" class="form-control" name="ospfArea[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary addOSPFNetwork" onclick="addOSPFNetwork()">Add OSPF Network</button>
+      <button type="button" class="remove-btn" onclick="removeOSPFNetwork(this)">Remove OSPF Network</button></div><br/>
+  </div>`);
+}
+function addRIPNetwork(){
+  const c = document.getElementById('ripNetworks');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="ripNetwork">
+    <div class="form-group"><label>RIP Network Prefix</label><input type="text" class="form-control" name="ripNetwork[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary" onclick="addRIPNetwork()">Add RIP Network</button>
+      <button type="button" class="remove-btn" onclick="removeRIPNetwork(this)">Remove RIP Network</button></div><br/>
+  </div>`);
+}
+function addVLANCore(){
+  const c = document.getElementById('vlansCore');
+  const idx = c.getElementsByClassName('vlanCore').length+1;
+  c.insertAdjacentHTML('beforeend', `
+  <div class="vlanCore"><h6>VLAN ${idx}</h6>
+    <div class="form-group"><label>VLAN ID</label><input type="number" class="form-control" name="vlanIdCore[]"></div>
+    <div class="form-group"><label>VLAN Name</label><input type="text" class="form-control" name="vlanNameCore[]"></div>
+    <div class="form-group"><label>IPv4 Subnet</label><input type="text" class="form-control" name="ipv4SubnetCore[]"></div>
+    <div class="form-group"><label>IPv6 Subnet</label><input type="text" class="form-control" name="ipv6SubnetCore[]"></div>
+    <div class="form-group"><label>OSPFv3 Area</label><input type="text" class="form-control" name="ospfv3AreaCore[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary" onclick="addVLANCore()">Add VLAN</button>
+      <button type="button" class="remove-btn" onclick="removeVLANCore(this)">Remove VLAN</button></div><br/>
+  </div>`);
+}
+function addInterfaceCore(){
+  const c = document.getElementById('interfacesCore');
+  const idx = c.getElementsByClassName('interfaceCore').length+1;
+  c.insertAdjacentHTML('beforeend', `
+  <div class="interfaceCore"><h6>Interface ${idx}</h6>
+    <div class="form-group"><label>Interface Name</label><input type="text" class="form-control" name="interfaceNameCore[]"></div>
+    <div class="form-group"><label>Switchport Mode</label><input type="text" class="form-control" name="switchportModeCore[]"></div>
+    <div class="form-group"><label>IPv4 Address</label><input type="text" class="form-control" name="ipv4Core[]"></div>
+    <div class="form-group"><label>IPv6 Address</label><input type="text" class="form-control" name="ipv6Core[]"></div>
+    <div class="form-group"><label>OSPFv3 Area</label><input type="text" class="form-control" name="ospfv3AreaInterfaceCore[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary" onclick="addInterfaceCore()">Add Interface</button>
+      <button type="button" class="remove-btn" onclick="removeInterfaceCore(this)">Remove Interface</button></div><br/>
+  </div>`);
+}
+function addStaticRouteCore(){
+  const c = document.getElementById('staticRoutesCore');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="routeCore"><h6>Static Route</h6>
+    <div class="form-group"><label>Static Route Prefix</label><input type="text" class="form-control" name="staticPrefixCore[]"></div>
+    <div class="form-group"><label>Static Route Next Hop</label><input type="text" class="form-control" name="staticNextHopCore[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary" onclick="addStaticRouteCore()">Add Static Route</button>
+      <button type="button" class="remove-btn" onclick="removeStaticRouteCore(this)">Remove Static Route</button></div><br/>
+  </div>`);
+}
+function addIPv6StaticRouteCore(){
+  const c = document.getElementById('ipv6StaticRoutesCore');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="ipv6RouteCore"><h6>IPv6 Static Route</h6>
+    <div class="form-group"><label>IPv6 Static Prefix</label><input type="text" class="form-control" name="ipv6StaticPrefixCore[]"></div>
+    <div class="form-group"><label>IPv6 Next Hop</label><input type="text" class="form-control" name="ipv6StaticNextHopCore[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary" onclick="addIPv6StaticRouteCore()">Add IPv6 Static Route</button>
+      <button type="button" class="remove-btn" onclick="removeIPv6StaticRouteCore(this)">Remove IPv6 Static Route</button></div><br/>
+  </div>`);
+}
+function addOSPFNetworkCore(){
+  const c = document.getElementById('ospfNetworksCore');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="ospfNetworkCore"><h6>OSPF Network</h6>
+    <div class="form-group"><label>OSPF Network Prefix</label><input type="text" class="form-control" name="ospfNetworkCore[]"></div>
+    <div class="form-group"><label>OSPF Area</label><input type="text" class="form-control" name="ospfAreaCore[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary" onclick="addOSPFNetworkCore()">Add OSPF Network</button>
+      <button type="button" class="remove-btn" onclick="removeOSPFNetworkCore(this)">Remove OSPF Network</button></div><br/>
+  </div>`);
+}
+function addBGPNeighborCore(){
+  const c = document.getElementById('bgpNeighborsCore');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="bgpNeighborCore"><h6>Neighbor</h6>
+    <div class="form-group"><label>Neighbor IP</label><input type="text" class="form-control" name="neighborIpCore[]"></div>
+    <div class="form-group"><label>Remote AS</label><input type="text" class="form-control" name="remoteAsCore[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary" onclick="addBGPNeighborCore()">Add Neighbor</button>
+      <button type="button" class="remove-btn" onclick="removeBGPNeighborCore(this)">Remove Neighbor</button></div>
+  </div>`);
+}
+function addBGPNetworkCore(){
+  const c = document.getElementById('bgpNetworksCore');
+  c.insertAdjacentHTML('beforeend', `
+  <div class="bgpNetworkCore"><h6>Advertised Network</h6>
+    <div class="form-group"><label>Network Prefix</label><input type="text" class="form-control" name="bgpNetworkPrefixCore[]"></div>
+    <div class="button-container"><button type="button" class="btn btn-primary" onclick="addBGPNetworkCore()">Add Network</button>
+      <button type="button" class="remove-btn" onclick="removeBGPNetworkCore(this)">Remove Network</button></div>
+  </div>`);
+}
+
+document.getElementById('addForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const form = e.target;
+  const resp = await fetch(form.action, { method:'POST', body:new FormData(form) });
+  const data = await resp.json();
+  const msg = document.getElementById('msg');
+  if (data.status === 'ok'){
+    msg.innerHTML = `<div class="alert alert-success mt-3">Saved! YAML: ${data.yaml}</div>`;
+    form.reset();
+  } else {
+    msg.innerHTML = `<div class="alert alert-danger mt-3">${data.message || 'Error saving device'}</div>`;
+  }
+});
+</script>
+</body>
+</html>
