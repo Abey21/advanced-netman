@@ -12,7 +12,7 @@ os.makedirs(DATA_DEVICES_DIR, exist_ok=True)
 os.makedirs(GENERATED_CONFIGS_DIR, exist_ok=True)
 
 # ---------- Grafana (configurable) ----------
-GRAFANA_URL = os.environ.get("GRAFANA_URL", "http://10.224.77.95:3000")
+GRAFANA_URL = os.environ.get("GRAFANA_URL", "http://10.224.76.95:3000")
 GRAFANA_DASH_UID = os.environ.get("GRAFANA_DASH_UID", "xf6o9HCHk")  # replace with your UID
 
 app = Flask(__name__)

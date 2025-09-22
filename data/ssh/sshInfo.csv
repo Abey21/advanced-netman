@@ -1,0 +1,4 @@
+Device,IP,Username,Password,Device_Type
+R1,10.100.0.7,admin,admin,arista_eos
+R2,10.100.0.6,admin,admin,arista_eos
+R3,10.100.0.8,admin,admin,arista_eos

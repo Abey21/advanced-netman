@@ -1,7 +1,7 @@
 device:
-  name: R3
+  name: R6
   vendor: arista_eos
-  mgmt_ip: 100.0.5.1
+  mgmt_ip: 100.0.10.1
   site: null
   vlans:
   - id: ''
@@ -19,7 +19,7 @@ device:
     ipv4_virtual_router_address: null
     ipv6_virtual_router_address: null
   interfaces:
-  - name: et6
+  - name: wt6
     ipv4: 10.0.2.1
     ipv6: null
     mtu: null
