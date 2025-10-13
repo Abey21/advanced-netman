@@ -1,4 +1,10 @@
 Device,IP,Username,Password,Device_Type
-R1,10.100.0.7,admin,admin,arista_eos
-R2,10.100.0.6,admin,admin,arista_eos
-R3,10.100.0.8,admin,admin,arista_eos
+R1,10.100.0.7,admin,G4KO1qo4gOdsvzcV,arista_eos
+R2,10.100.0.6,admin,65DIuA-97ebzv3mL,arista_eos
+R3,10.100.0.8,admin,Tn3S9oZ8iAaT6S8V,arista_eos
+R4,10.100.0.9,admin,VtjH2Gb5FGgimt2r,arista_eos
+R5,10.100.0.10,admin,Wid70QlWfZcp_ue-,arista_eos
+S1,10.100.0.11,admin,ZGKIFs13dQlEiNhF,arista_eos
+S2,10.100.0.12,admin,CuVAdTwQAEninkiG,arista_eos
+S3,10.100.0.13,admin,TTKNhrZMsWXzkkLd,arista_eos
+S4,10.100.0.14,admin,JbMUNaXlNSLkM1Ac,arista_eos
