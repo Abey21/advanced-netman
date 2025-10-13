@@ -2,25 +2,15 @@ pipeline {
   agent any
 
   environment {
-    // Set default excludes here if you want to skip certain devices (optional)
-    PING_EXCLUDE = "S1,S2"
-    PYTHON = "${WORKSPACE}/.venv/bin/python3"
-    PIP    = "${WORKSPACE}/.venv/bin/pip"
-  }
+    VENV = "${WORKSPACE}/.venv"
+    CSV  = "data/ssh/sshInfo.csv"
+    DST  = "1.1.1.2"
 
-  options {
-    timestamps()
-    ansiColor('xterm')
-    buildDiscarder(logRotator(numToKeepStr: '20'))
-  }
-
-  triggers {
-    // If your GitHub webhook is configured, this will auto-trigger on pushes
-    githubPush()
+    // Change this regex if you want to exclude different devices later
+    EXCLUDE_REGEX = "^(S1|S2),"
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
@@ -30,10 +20,10 @@ pipeline {
     stage('Verify files') {
       steps {
         sh '''
-          echo "WORKSPACE=${WORKSPACE}"
+          echo "WORKSPACE=$WORKSPACE"
           test -f scripts/ping_webserver.py
-          test -f data/ssh/sshInfo.csv
-          head -n 3 data/ssh/sshInfo.csv
+          test -f "$CSV"
+          head -n 3 "$CSV"
         '''
       }
     }
@@ -41,32 +31,34 @@ pipeline {
     stage('Create venv & install deps') {
       steps {
         sh '''
-          python3 -m venv .venv
-          ${PIP} install --upgrade pip wheel
-          ${PIP} install netmiko rich loguru
+          python3 -m venv "$VENV"
+          . "$VENV/bin/activate"
+          python -m pip install --upgrade pip wheel
+          python -m pip install netmiko rich loguru
+        '''
+      }
+    }
+
+    stage('Filter CSV (exclude S1,S2)') {
+      steps {
+        sh '''
+          mkdir -p artifacts
+          # Keep header, then filter out rows that start with S1, S2
+          { head -n 1 "$CSV"; tail -n +2 "$CSV" | grep -Ev "$EXCLUDE_REGEX"; } > artifacts/sshInfo.filtered.csv
+          echo "Filtered CSV preview:"
+          cat artifacts/sshInfo.filtered.csv
         '''
       }
     }
 
     stage('Ping webserver from devices') {
       steps {
-        script {
-          // Run script; capture return code (non-zero means some devices failed)
-          def rc = sh(returnStatus: true, script: """
-            source .venv/bin/activate
-            ${PYTHON} scripts/ping_webserver.py \
-              --csv data/ssh/sshInfo.csv \
-              --dst 1.1.1.2 \
-              --count 5 \
-              --exclude "${PING_EXCLUDE}"
-          """)
-
-          // Mark the build UNSTABLE (yellow) instead of FAILURE (red)
-          if (rc != 0) {
-            currentBuild.result = 'UNSTABLE'
-            echo "Some devices failed ping. Marking build as UNSTABLE."
-          }
-        }
+        sh '''
+          . "$VENV/bin/activate"
+          echo "Ping destination: $DST"
+          echo "Using CSV: artifacts/sshInfo.filtered.csv"
+          python scripts/ping_webserver.py --csv artifacts/sshInfo.filtered.csv --dst "$DST"
+        '''
       }
     }
   }
@@ -74,9 +66,6 @@ pipeline {
   post {
     always {
       archiveArtifacts artifacts: 'artifacts/**', fingerprint: true
-    }
-    unstable {
-      echo 'Ping job had failures. Check artifacts/ping_report.txt and artifacts/netmiko/*.log'
     }
   }
 }
