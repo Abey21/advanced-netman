@@ -2,22 +2,30 @@ pipeline {
   agent any
 
   environment {
-    PY   = "${WORKSPACE}/.venv/bin/python"
-    PIP  = "${WORKSPACE}/.venv/bin/pip"
+    VENV = ".venv"
+    PY   = "${WORKSPACE}/${VENV}/bin/python"
+    PIP  = "${WORKSPACE}/${VENV}/bin/pip"
   }
 
   stages {
-
     stage('Checkout') {
       steps {
-        checkout scm
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: '*/main']],
+          userRemoteConfigs: [[
+            url: 'https://github.com/Abey21/advanced-netman.git',
+            credentialsId: '099056a1-85db-4092-b54d-cd8544650ace'
+          ]]
+        ])
       }
     }
 
     stage('Verify files') {
       steps {
-        sh '''
-          echo "WORKSPACE=$WORKSPACE"
+        sh '''#!/usr/bin/env bash
+          set -euo pipefail
+          echo "WORKSPACE=${WORKSPACE}"
           test -f scripts/ping_webserver.py
           test -f data/ssh/sshInfo.csv
           head -n 3 data/ssh/sshInfo.csv
@@ -27,18 +35,11 @@ pipeline {
 
     stage('Create venv & install deps') {
       steps {
-        // Use bash so we can 'source' reliably
         sh '''#!/usr/bin/env bash
           set -euo pipefail
-
-          # Create the venv if it doesn't exist yet
-          if [ ! -x ".venv/bin/python" ]; then
-            python3 -m venv .venv
-          fi
-
-          # Upgrade pip/wheel into the venv and install required libs
-          . .venv/bin/activate
-          pip install --upgrade pip wheel
+          python3 -m venv "${VENV}"
+          . "${VENV}/bin/activate"
+          python -m pip install --upgrade pip wheel
           pip install netmiko rich loguru
         '''
       }
@@ -48,23 +49,16 @@ pipeline {
       steps {
         sh '''#!/usr/bin/env bash
           set -euo pipefail
-          . .venv/bin/activate
-          # Run the ping script with the required CSV and destination IP.
-          ${PY} scripts/ping_webserver.py --csv data/ssh/sshInfo.csv --dst 1.1.1.2 | tee ping_results.txt
+          . "${VENV}/bin/activate"
+          "${PY}" scripts/ping_webserver.py --csv data/ssh/sshInfo.csv --dst 1.1.1.2 | tee ping_results.txt
         '''
       }
     }
-
+  }
 
   post {
     always {
-      archiveArtifacts allowEmptyArchive: true, artifacts: 'ping_results.*'
-    }
-    success {
-      echo 'Ping job completed successfully.'
-    }
-    failure {
-      echo 'Ping job failed. Check Console Output for details.'
+      archiveArtifacts artifacts: 'ping_results.txt', onlyIfSuccessful: false
     }
   }
 }
