@@ -49,11 +49,12 @@ pipeline {
         sh '''#!/usr/bin/env bash
           set -euo pipefail
           . .venv/bin/activate
-          ${PY} scripts/ping_webserver.py
+          # Run the ping script with the required CSV and destination IP.
+          ${PY} scripts/ping_webserver.py --csv data/ssh/sshInfo.csv --dst 1.1.1.2 | tee ping_results.txt
         '''
       }
     }
-  }
+
 
   post {
     always {
