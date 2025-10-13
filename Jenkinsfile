@@ -1,44 +1,55 @@
 pipeline {
   agent any
-  triggers { githubPush() }   // run when GitHub webhook fires
 
   environment {
-    PING_SCRIPT = 'scripts/ping_webserver.py'
-    SSH_CSV     = 'data/ssh/sshInfo.csv'
-    DST_IP      = '1.1.1.2'
+    PY   = "${WORKSPACE}/.venv/bin/python"
+    PIP  = "${WORKSPACE}/.venv/bin/pip"
   }
 
   stages {
+
     stage('Checkout') {
-      steps { checkout scm }
+      steps {
+        checkout scm
+      }
     }
 
     stage('Verify files') {
       steps {
         sh '''
           echo "WORKSPACE=$WORKSPACE"
-          test -f "${PING_SCRIPT}" || { echo "Missing ${PING_SCRIPT}"; exit 2; }
-          test -f "${SSH_CSV}"     || { echo "Missing ${SSH_CSV}"; exit 2; }
-          head -n 3 "${SSH_CSV}" || true
+          test -f scripts/ping_webserver.py
+          test -f data/ssh/sshInfo.csv
+          head -n 3 data/ssh/sshInfo.csv
         '''
       }
     }
 
-    stage('Install deps') {
+    stage('Create venv & install deps') {
       steps {
-        sh '''
-          python3 -m pip install --user --upgrade pip
-          python3 -m pip install --user netmiko rich pandas
+        // Use bash so we can 'source' reliably
+        sh '''#!/usr/bin/env bash
+          set -euo pipefail
+
+          # Create the venv if it doesn't exist yet
+          if [ ! -x ".venv/bin/python" ]; then
+            python3 -m venv .venv
+          fi
+
+          # Upgrade pip/wheel into the venv and install required libs
+          . .venv/bin/activate
+          pip install --upgrade pip wheel
+          pip install netmiko rich loguru
         '''
       }
     }
 
     stage('Ping webserver from devices') {
       steps {
-        sh '''
-          mkdir -p reports
-          python3 "${PING_SCRIPT}" --csv "${SSH_CSV}" --dst "${DST_IP}" \
-            | tee reports/ping_report.txt
+        sh '''#!/usr/bin/env bash
+          set -euo pipefail
+          . .venv/bin/activate
+          ${PY} scripts/ping_webserver.py
         '''
       }
     }
@@ -46,7 +57,13 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'reports/*.txt', onlyIfSuccessful: false
+      archiveArtifacts allowEmptyArchive: true, artifacts: 'ping_results.*'
+    }
+    success {
+      echo 'Ping job completed successfully.'
+    }
+    failure {
+      echo 'Ping job failed. Check Console Output for details.'
     }
   }
 }
