@@ -24,7 +24,7 @@ def read_csv(csv_path):
 
 def ping_eos(net_connect, dst):
     # EOS: 'ping <ip> count 2'
-    out = net_connect.send_command(f"ping {dst} count 2", expect_string=r"#")
+    out = net_connect.send_command(f"ping {dst}", expect_string=r"#")
     ok = (" 0% packet loss" in out) or (" 0% loss" in out) or (" 2 received" in out)
     return ok, out
 
