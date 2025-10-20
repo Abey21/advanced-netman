@@ -110,6 +110,25 @@ pipeline {
     }
     // ===== End optional =====
   }
+    
+    stage('Create venv & install deps') {
+  steps {
+    sh '''
+      python3 -m venv "$VENV"
+      . "$VENV/bin/activate"
+      python -m pip install --upgrade pip wheel
+
+      # test + utils
+      pip install coverage jinja2 pyyaml ipaddress
+
+      # health_check imports:
+      pip install art InquirerPy rich termcolor loguru
+
+      # device libs (even though we mock, health_check imports them at import time)
+      pip install netmiko paramiko
+    '''
+  }
+}
 
   post {
     success { echo '✅ Unit tests + coverage complete (mocked), reports published.' }
