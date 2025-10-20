@@ -1,12 +1,16 @@
 pipeline {
   agent any
 
-  options { timestamps(); ansiColor('xterm') }
+  options {
+    timestamps()
+    // ansiColor('xterm')  // <-- removed because not supported on your Jenkins
+  }
 
   environment {
     VENV = "${WORKSPACE}/.venv"
     SSHINFO_CSV = "${WORKSPACE}/data/ssh/sshInfo.csv"
-    // For your previous optional stages:
+
+    // optional legacy vars you used earlier
     CSV  = "data/ssh/sshInfo.csv"
     DST  = "1.1.1.2"
     EXCLUDE_REGEX = "^(S1|S2),"
@@ -23,22 +27,19 @@ pipeline {
           python3 -m venv "$VENV"
           . "$VENV/bin/activate"
           python -m pip install --upgrade pip wheel
-          # deps for unit tests + coverage
           pip install coverage jinja2 pyyaml ipaddress
-          # If health_check imports netmiko at import-time, install it (even if mocked later)
-          pip install netmiko paramiko
-          # Optional: j2lint if you want a template lint stage
-          # pip install j2lint
+          pip install netmiko paramiko  # required at import-time by health_check.py
         '''
       }
     }
 
-    // Optional: template lint (uncomment if you use it)
+    // Optional: lint templates if you use them
     // stage('Lint Jinja2 Templates') {
     //   when { expression { return fileExists("template-generator/templates") } }
     //   steps {
     //     sh '''
     //       . "$VENV/bin/activate"
+    //       pip install j2lint
     //       j2lint template-generator/templates
     //     '''
     //   }
@@ -71,7 +72,7 @@ pipeline {
       }
     }
 
-    // ===== Optional: keep your earlier CSV filter + ping stages =====
+    // ===== Optional: your earlier CSV filter + ping stages =====
     stage('Verify CSV present') {
       steps {
         sh '''
@@ -98,7 +99,6 @@ pipeline {
           . "$VENV/bin/activate"
           echo "Ping destination: $DST"
           echo "Using CSV: artifacts/sshInfo.filtered.csv"
-          # Only run if your script exists:
           if [ -f scripts/ping_webserver.py ]; then
             python scripts/ping_webserver.py --csv artifacts/sshInfo.filtered.csv --dst "$DST"
           else
