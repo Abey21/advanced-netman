@@ -1,0 +1,19 @@
+[run]
+# Measure coverage for your code in scripts/
+source = scripts
+branch = True
+omit =
+    */test_*.py
+    */.venv/*
+    Jenkinsfile
+
+[report]
+show_missing = True
+skip_covered = False
+
+[html]
+directory = coverage_html
+
+[json]
+output = coverage.json
+pretty_print = True
