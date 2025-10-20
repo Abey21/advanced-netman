@@ -49,6 +49,7 @@ pipeline {
       steps {
         sh '''
           . "$VENV/bin/activate"
+          export PYTHONPATH="$WORKSPACE" 
           export SSHINFO_CSV="${SSHINFO_CSV}"
           coverage run --source=scripts -m unittest discover -s scripts -p "test_*.py"
           coverage html
