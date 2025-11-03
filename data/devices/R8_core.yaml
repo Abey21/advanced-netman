@@ -15,6 +15,11 @@ device:
     ipv6: null
     switchport_mode: routed
     ospfv3_area: null
+  - name: et3
+    ipv4: 10.100.0.17
+    ipv6: null
+    switchport_mode: routed
+    ospfv3_area: null
   routes:
     static: []
     ipv6_static: []

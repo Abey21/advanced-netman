@@ -60,3 +60,10 @@ many situations the pattern is automatically based on the network device's promp
 You can also look at the Netmiko session_log or debug log for more information.
 
 
+2025-11-02T18:17:09.009560-0700 | INFO | ========== ZTP SERVICE STARTED ==========
+2025-11-02T18:17:09.010616-0700 | INFO | Discovered 1 devices to configure: ['R8']
+2025-11-02T18:17:09.011406-0700 | INFO | [R8] Watching for device to appear...
+2025-11-02T18:17:09.063239-0700 | INFO | [R8] Device is reachable at 10.100.0.10.
+2025-11-02T18:17:09.065698-0700 | INFO | [R8] Connecting to 10.100.0.10 ...
+2025-11-02T18:17:21.202411-0700 | SUCCESS | [R8] Configuration pushed successfully to 10.100.0.10
+2025-11-02T18:17:21.202923-0700 | SUCCESS | ========== ZTP CONFIGURATION COMPLETE ==========
