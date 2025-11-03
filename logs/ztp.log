@@ -1,0 +1,62 @@
+2025-11-02T18:14:24.454941-0700 | INFO | ========== ZTP SERVICE STARTED ==========
+2025-11-02T18:14:24.455868-0700 | INFO | Discovered 4 devices to configure: ['R8', 'R10', 'R15', 'R6']
+2025-11-02T18:14:24.456500-0700 | INFO | [R8] Watching for device to appear...
+2025-11-02T18:14:24.457646-0700 | INFO | [R10] Watching for device to appear...
+2025-11-02T18:14:24.458211-0700 | INFO | [R15] Watching for device to appear...
+2025-11-02T18:14:24.460758-0700 | INFO | [R6] Watching for device to appear...
+2025-11-02T18:14:24.470023-0700 | INFO | [R8] Device is reachable at 10.100.0.10.
+2025-11-02T18:14:24.471246-0700 | INFO | [R8] Connecting to 10.100.0.10 ...
+2025-11-02T18:14:24.471644-0700 | INFO | [R10] Device is reachable at 10.100.0.10.
+2025-11-02T18:14:24.472368-0700 | INFO | [R10] Connecting to 10.100.0.10 ...
+2025-11-02T18:14:24.475412-0700 | INFO | [R6] Device is reachable at 10.100.0.10.
+2025-11-02T18:14:24.476331-0700 | INFO | [R6] Connecting to 10.100.0.10 ...
+2025-11-02T18:14:24.499816-0700 | INFO | [R15] Device is reachable at 10.100.0.10.
+2025-11-02T18:14:24.500241-0700 | INFO | [R15] Connecting to 10.100.0.10 ...
+2025-11-02T18:14:55.646592-0700 | ERROR | [R8] Failed to push config: 
+
+Pattern not detected: 'R5.*' in output.
+
+Things you might try to fix this:
+1. Adjust the regex pattern to better identify the terminating string. Note, in
+many situations the pattern is automatically based on the network device's prompt.
+2. Increase the read_timeout to a larger value.
+
+You can also look at the Netmiko session_log or debug log for more information.
+
+
+2025-11-02T18:14:59.889707-0700 | ERROR | [R6] Failed to push config: 
+
+Pattern not detected: 'R5.*' in output.
+
+Things you might try to fix this:
+1. Adjust the regex pattern to better identify the terminating string. Note, in
+many situations the pattern is automatically based on the network device's prompt.
+2. Increase the read_timeout to a larger value.
+
+You can also look at the Netmiko session_log or debug log for more information.
+
+
+2025-11-02T18:15:00.082691-0700 | ERROR | [R10] Failed to push config: 
+
+Pattern not detected: 'R5.*' in output.
+
+Things you might try to fix this:
+1. Adjust the regex pattern to better identify the terminating string. Note, in
+many situations the pattern is automatically based on the network device's prompt.
+2. Increase the read_timeout to a larger value.
+
+You can also look at the Netmiko session_log or debug log for more information.
+
+
+2025-11-02T18:15:02.808803-0700 | ERROR | [R15] Failed to push config: 
+
+Pattern not detected: 'R5.*' in output.
+
+Things you might try to fix this:
+1. Adjust the regex pattern to better identify the terminating string. Note, in
+many situations the pattern is automatically based on the network device's prompt.
+2. Increase the read_timeout to a larger value.
+
+You can also look at the Netmiko session_log or debug log for more information.
+
+
