@@ -6,7 +6,7 @@ Triggered automatically when a new device is added through the GUI.
 
 Reads device details (name, mgmt_ip, vendor, credentials) from YAMLs
 inside /data/devices, waits for each device to become reachable via ping,
-then SSHs into it and pushes the generated .cfg from /startup_configs.
+then SSHs into it and pushes the generated .cfg from /generated-config.
 """
 
 import os
@@ -20,7 +20,7 @@ from loguru import logger
 # === PATH CONFIGURATION ===
 BASE_DIR = "/home/student/advanced-netman"
 DEVICE_YAML_DIR = f"{BASE_DIR}/data/devices"
-CONFIG_DIR = f"{BASE_DIR}/startup_configs"
+CONFIG_DIR = f"{BASE_DIR}/generated-config"
 LOG_FILE = f"{BASE_DIR}/logs/ztp_autopush.log"
 
 PING_INTERVAL = 3  # seconds between ping retries
