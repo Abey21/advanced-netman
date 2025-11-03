@@ -15,7 +15,7 @@ device:
     ipv6: null
     switchport_mode: routed
     ospfv3_area: null
-  - name: et3
+  - name: et2
     ipv4: 10.100.0.17
     ipv6: null
     switchport_mode: routed
