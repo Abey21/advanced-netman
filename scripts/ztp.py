@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-Simple ZTP Auto-Config Script
------------------------------
-Manually defines management IPs and config files to push.
+ZTP (Zero Touch Provisioning) – Safe Preview Version
+----------------------------------------------------
+Pushes configs from generated-configs to Arista devices.
 
-As soon as the target device responds to ping, the script SSHs in and applies
-its configuration stored in /home/student/advanced-netman/generated-configs/.
+✅ Only merges configuration (does NOT erase).
+✅ Shows full CLI output for each command pushed.
+✅ Waits until device is reachable before connecting.
 """
 
 import os
@@ -17,24 +18,23 @@ from loguru import logger
 # === Paths ===
 BASE_DIR = "/home/student/advanced-netman"
 CONFIG_DIR = f"{BASE_DIR}/generated-configs"
-LOG_FILE = f"{BASE_DIR}/logs/ztp_manual.log"
-PING_INTERVAL = 3  # seconds between ping retries
+LOG_FILE = f"{BASE_DIR}/logs/ztp_preview.log"
+PING_INTERVAL = 3  # seconds
 
-# === Logging ===
+# === Logging Setup ===
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 logger.add(LOG_FILE, rotation="10 MB", level="INFO", format="{time} | {level} | {message}")
 
-# ---------------------------------------------------------------------
-# 💡 Define your devices here manually:
+# === Manual Device Definitions ===
 DEVICES = {
     "R8": {
         "device_type": "arista_eos",
-        "host": "10.100.0.17",         # <-- management IP of R8
+        "host": "10.100.0.17",          # Management IP of R8
         "username": "admin",
         "password": "admin",
         "config_file": f"{CONFIG_DIR}/R8.cfg"
     },
-    # You can add others later if needed:
+    # Example for future:
     # "R9": {
     #     "device_type": "arista_eos",
     #     "host": "10.100.0.18",
@@ -44,14 +44,14 @@ DEVICES = {
     # }
 }
 
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------
 def is_reachable(ip):
-    """Return True if IP responds to ping."""
+    """Check if device responds to ping."""
     return os.system(f"ping -c 1 -W 2 {ip} > /dev/null 2>&1") == 0
 
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------
 def push_config(device_name, device_info):
-    """SSH into device and push config."""
+    """SSH into device and safely apply config while printing output."""
     ip = device_info["host"]
     cfg_file = device_info["config_file"]
 
@@ -68,34 +68,46 @@ def push_config(device_name, device_info):
             password=device_info["password"]
         )
         conn.enable()
+
+        # Read the config file
         with open(cfg_file) as f:
             cfg_lines = f.read().splitlines()
-        conn.send_config_set(cfg_lines)
+
+        logger.info(f"[{device_name}] Sending configuration lines...")
+        output = conn.send_config_set(cfg_lines, exit_config_mode=False)
+        print(f"\n=== CLI Output for {device_name} ({ip}) ===\n")
+        print(output)
+        print("==========================================\n")
+
+        conn.exit_config_mode()
         conn.save_config()
         conn.disconnect()
-        logger.success(f"[{device_name}] ✅ Configuration applied successfully.")
+
+        logger.success(f"[{device_name}] ✅ Config applied successfully (check console for details).")
+
     except Exception as e:
         logger.error(f"[{device_name}] ❌ Failed to push config: {e}")
 
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------
 def ztp_worker(device_name, device_info):
-    """Ping until device becomes reachable, then push config."""
+    """Wait for device reachability and push config."""
     ip = device_info["host"]
     logger.info(f"[{device_name}] Waiting for {ip} to become reachable...")
+
     while True:
         if is_reachable(ip):
-            logger.info(f"[{device_name}] {ip} is reachable. Pushing config...")
+            logger.info(f"[{device_name}] {ip} is reachable. Starting config push.")
             push_config(device_name, device_info)
             break
         else:
             logger.info(f"[{device_name}] Not reachable yet. Retrying in {PING_INTERVAL}s...")
             time.sleep(PING_INTERVAL)
 
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------
 def main():
-    logger.info("========== ZTP MANUAL MODE STARTED ==========")
-    threads = []
+    logger.info("========== ZTP SAFE PREVIEW STARTED ==========")
 
+    threads = []
     for name, info in DEVICES.items():
         t = threading.Thread(target=ztp_worker, args=(name, info))
         t.start()
@@ -106,6 +118,6 @@ def main():
 
     logger.success("========== ZTP CONFIGURATION COMPLETE ==========")
 
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------
 if __name__ == "__main__":
     main()
