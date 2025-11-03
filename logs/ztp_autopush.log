@@ -4,3 +4,9 @@
 2025-11-02T19:11:51.814267-0700 | WARNING | [R15] Config file not found yet: /home/student/advanced-netman/startup_configs/R15.cfg
 2025-11-02T19:11:51.837366-0700 | WARNING | [R6] Config file not found yet: /home/student/advanced-netman/startup_configs/R6.cfg
 2025-11-02T19:11:51.837794-0700 | WARNING | No devices found in data/devices.
+2025-11-02T19:15:30.734871-0700 | INFO | ========== ZTP AUTOPUSH STARTED ==========
+2025-11-02T19:15:30.740574-0700 | WARNING | [R10] Config file not found yet: /home/student/advanced-netman/generated-config/R10.cfg
+2025-11-02T19:15:30.745014-0700 | WARNING | [R8] Config file not found yet: /home/student/advanced-netman/generated-config/R8.cfg
+2025-11-02T19:15:30.748869-0700 | WARNING | [R15] Config file not found yet: /home/student/advanced-netman/generated-config/R15.cfg
+2025-11-02T19:15:30.754107-0700 | WARNING | [R6] Config file not found yet: /home/student/advanced-netman/generated-config/R6.cfg
+2025-11-02T19:15:30.754397-0700 | WARNING | No devices found in data/devices.

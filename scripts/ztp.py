@@ -20,7 +20,7 @@ from loguru import logger
 # === PATH CONFIGURATION ===
 BASE_DIR = "/home/student/advanced-netman"
 DEVICE_YAML_DIR = f"{BASE_DIR}/data/devices"
-CONFIG_DIR = f"{BASE_DIR}/generated-config"
+CONFIG_DIR = f"{BASE_DIR}/generated-configs"
 LOG_FILE = f"{BASE_DIR}/logs/ztp_autopush.log"
 
 PING_INTERVAL = 3  # seconds between ping retries
