@@ -1,108 +1,90 @@
 #!/usr/bin/env python3
 """
-Zero Touch Provisioning (ZTP) Auto-Push Script
-----------------------------------------------
-Triggered automatically when a new device is added through the GUI.
+Simple ZTP Auto-Config Script
+-----------------------------
+Manually defines management IPs and config files to push.
 
-Reads device details (name, mgmt_ip, vendor, credentials) from YAMLs
-inside /data/devices, waits for each device to become reachable via ping,
-then SSHs into it and pushes the generated .cfg from /generated-config.
+As soon as the target device responds to ping, the script SSHs in and applies
+its configuration stored in /home/student/advanced-netman/generated-configs/.
 """
 
 import os
 import time
 import threading
-import yaml
-import glob
 from netmiko import ConnectHandler
 from loguru import logger
 
-# === PATH CONFIGURATION ===
+# === Paths ===
 BASE_DIR = "/home/student/advanced-netman"
-DEVICE_YAML_DIR = f"{BASE_DIR}/data/devices"
 CONFIG_DIR = f"{BASE_DIR}/generated-configs"
-LOG_FILE = f"{BASE_DIR}/logs/ztp_autopush.log"
-
+LOG_FILE = f"{BASE_DIR}/logs/ztp_manual.log"
 PING_INTERVAL = 3  # seconds between ping retries
 
-# === Ensure logs folder exists ===
+# === Logging ===
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 logger.add(LOG_FILE, rotation="10 MB", level="INFO", format="{time} | {level} | {message}")
 
 # ---------------------------------------------------------------------
-
-def discover_new_devices():
-    """
-    Discover all device YAMLs and map them to their generated .cfg files.
-    Each YAML is expected to have fields:
-      device.name, device.mgmt_ip, device.vendor, device.username, device.password
-    """
-    devices = {}
-    for yaml_file in glob.glob(f"{DEVICE_YAML_DIR}/*.yaml"):
-        with open(yaml_file) as f:
-            try:
-                data = yaml.safe_load(f)
-                dev = data.get("device", {})
-                name = dev.get("name")
-                if not name:
-                    continue
-
-                cfg_file = os.path.join(CONFIG_DIR, f"{name}.cfg")
-                if not os.path.exists(cfg_file):
-                    logger.warning(f"[{name}] Config file not found yet: {cfg_file}")
-                    continue
-
-                devices[name] = {
-                    "device_type": dev.get("vendor", "arista_eos"),
-                    "host": dev.get("mgmt_ip"),
-                    "username": dev.get("username", "admin"),
-                    "password": dev.get("password", "admin"),
-                    "config_file": cfg_file
-                }
-
-            except Exception as e:
-                logger.error(f"Error reading {yaml_file}: {e}")
-    return devices
+# 💡 Define your devices here manually:
+DEVICES = {
+    "R8": {
+        "device_type": "arista_eos",
+        "host": "10.100.0.17",         # <-- management IP of R8
+        "username": "admin",
+        "password": "admin",
+        "config_file": f"{CONFIG_DIR}/R8.cfg"
+    },
+    # You can add others later if needed:
+    # "R9": {
+    #     "device_type": "arista_eos",
+    #     "host": "10.100.0.18",
+    #     "username": "admin",
+    #     "password": "admin",
+    #     "config_file": f"{CONFIG_DIR}/R9.cfg"
+    # }
+}
 
 # ---------------------------------------------------------------------
-
 def is_reachable(ip):
-    """Check ping reachability (returns True if host responds)."""
+    """Return True if IP responds to ping."""
     return os.system(f"ping -c 1 -W 2 {ip} > /dev/null 2>&1") == 0
 
 # ---------------------------------------------------------------------
-
 def push_config(device_name, device_info):
-    """SSH into the device and push its generated configuration."""
+    """SSH into device and push config."""
+    ip = device_info["host"]
     cfg_file = device_info["config_file"]
-    with open(cfg_file) as f:
-        cfg_lines = f.read().splitlines()
 
-    conn_info = {k: v for k, v in device_info.items() if k != "config_file"}
+    if not os.path.exists(cfg_file):
+        logger.error(f"[{device_name}] Config file not found: {cfg_file}")
+        return
+
     try:
-        logger.info(f"[{device_name}] Connecting to {device_info['host']} ...")
-        conn = ConnectHandler(**conn_info)
+        logger.info(f"[{device_name}] Connecting to {ip} ...")
+        conn = ConnectHandler(
+            device_type=device_info["device_type"],
+            host=ip,
+            username=device_info["username"],
+            password=device_info["password"]
+        )
         conn.enable()
+        with open(cfg_file) as f:
+            cfg_lines = f.read().splitlines()
         conn.send_config_set(cfg_lines)
         conn.save_config()
         conn.disconnect()
-        logger.success(f"[{device_name}] ✅ Config applied successfully.")
+        logger.success(f"[{device_name}] ✅ Configuration applied successfully.")
     except Exception as e:
         logger.error(f"[{device_name}] ❌ Failed to push config: {e}")
 
 # ---------------------------------------------------------------------
-
-def ping_and_push(device_name, device_info):
-    """Wait until device is reachable, then push configuration."""
+def ztp_worker(device_name, device_info):
+    """Ping until device becomes reachable, then push config."""
     ip = device_info["host"]
-    if not ip:
-        logger.warning(f"[{device_name}] No management IP found in YAML. Skipping.")
-        return
-
     logger.info(f"[{device_name}] Waiting for {ip} to become reachable...")
     while True:
         if is_reachable(ip):
-            logger.info(f"[{device_name}] {ip} is reachable. Beginning config push.")
+            logger.info(f"[{device_name}] {ip} is reachable. Pushing config...")
             push_config(device_name, device_info)
             break
         else:
@@ -110,18 +92,12 @@ def ping_and_push(device_name, device_info):
             time.sleep(PING_INTERVAL)
 
 # ---------------------------------------------------------------------
-
 def main():
-    logger.info("========== ZTP AUTOPUSH STARTED ==========")
-    devices = discover_new_devices()
-
-    if not devices:
-        logger.warning("No devices found in data/devices.")
-        return
-
+    logger.info("========== ZTP MANUAL MODE STARTED ==========")
     threads = []
-    for name, info in devices.items():
-        t = threading.Thread(target=ping_and_push, args=(name, info))
+
+    for name, info in DEVICES.items():
+        t = threading.Thread(target=ztp_worker, args=(name, info))
         t.start()
         threads.append(t)
 
@@ -131,6 +107,5 @@ def main():
     logger.success("========== ZTP CONFIGURATION COMPLETE ==========")
 
 # ---------------------------------------------------------------------
-
 if __name__ == "__main__":
     main()

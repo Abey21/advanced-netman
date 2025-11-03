@@ -10,3 +10,21 @@
 2025-11-02T19:15:30.748869-0700 | WARNING | [R15] Config file not found yet: /home/student/advanced-netman/generated-config/R15.cfg
 2025-11-02T19:15:30.754107-0700 | WARNING | [R6] Config file not found yet: /home/student/advanced-netman/generated-config/R6.cfg
 2025-11-02T19:15:30.754397-0700 | WARNING | No devices found in data/devices.
+2025-11-02T19:17:35.580161-0700 | INFO | ========== ZTP AUTOPUSH STARTED ==========
+2025-11-02T19:17:35.589203-0700 | WARNING | [R10] Config file not found yet: /home/student/advanced-netman/generated-configs/R10.cfg
+2025-11-02T19:17:35.602491-0700 | WARNING | [R15] Config file not found yet: /home/student/advanced-netman/generated-configs/R15.cfg
+2025-11-02T19:17:35.608331-0700 | WARNING | [R6] Config file not found yet: /home/student/advanced-netman/generated-configs/R6.cfg
+2025-11-02T19:17:35.610951-0700 | INFO | [R8] Waiting for 100.10.0.17 to become reachable...
+2025-11-02T19:17:35.671654-0700 | INFO | [R8] 100.10.0.17 is reachable. Beginning config push.
+2025-11-02T19:17:35.672078-0700 | INFO | [R8] Connecting to 100.10.0.17 ...
+2025-11-02T19:17:45.687696-0700 | ERROR | [R8] ❌ Failed to push config: TCP connection to device failed.
+
+Common causes of this problem are:
+1. Incorrect hostname or IP address.
+2. Wrong TCP port.
+3. Intermediate firewall blocking access.
+
+Device settings: arista_eos 100.10.0.17:22
+
+
+2025-11-02T19:17:45.688792-0700 | SUCCESS | ========== ZTP CONFIGURATION COMPLETE ==========
