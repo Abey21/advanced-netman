@@ -1,0 +1,9 @@
+2025-11-02T18:41:35.279017-0700 | INFO | ========== ZTP SERVICE STARTED ==========
+2025-11-02T18:41:35.280221-0700 | INFO | Discovered 1 config files: ['R8']
+2025-11-02T18:41:35.337300-0700 | INFO | 10.100.0.10 responded — testing connection for R8...
+2025-11-02T18:41:39.001521-0700 | INFO | Verified R8 at 10.100.0.10
+2025-11-02T18:41:43.622910-0700 | INFO | [R8] Performing Ethernet1 setup...
+2025-11-02T18:41:45.611123-0700 | SUCCESS | [R8] Initial interface configuration complete.
+2025-11-02T18:41:55.348618-0700 | SUCCESS | [10.100.0.10] ✅ Configuration applied successfully.
+2025-11-02T18:41:55.436066-0700 | INFO | Disconnected from 10.100.0.10.
+2025-11-02T18:41:55.436594-0700 | SUCCESS | ========== ZTP CONFIGURATION COMPLETE ==========
