@@ -1,15 +1,9 @@
 device:
   name: R8
   vendor: arista_eos
-  mgmt_ip: 10.100.0.17
+  mgmt_ip: 100.10.0.17
   site: null
-  vlans:
-  - id: ''
-    name: null
-    ipv4_subnet: null
-    ipv6_subnet: null
-    ospfv3:
-      area: null
+  vlans: []
   interfaces:
   - name: et1
     ipv4: 10.202.0.2
@@ -22,25 +16,18 @@ device:
     switchport_mode: routed
     ospfv3_area: null
   routes:
-    static:
-    - prefix: null
-      next_hop: null
-    ipv6_static:
-    - prefix: null
-      next_hop: null
+    static: []
+    ipv6_static: []
   routing_protocols:
     ospf:
-      id: null
+      id: '1'
       networks:
       - prefix: 10.202.0.0
         area: '20'
     ospfv3:
       address_family: ipv6
-      redistribute_bgp: 'true'
+      redistribute_bgp: true
     bgp:
       as: null
-      neighbors:
-      - ip: null
-        remote_as: null
-      networks:
-      - null
+      neighbors: []
+      networks: []
