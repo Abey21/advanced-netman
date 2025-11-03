@@ -67,3 +67,21 @@ You can also look at the Netmiko session_log or debug log for more information.
 2025-11-02T18:17:09.065698-0700 | INFO | [R8] Connecting to 10.100.0.10 ...
 2025-11-02T18:17:21.202411-0700 | SUCCESS | [R8] Configuration pushed successfully to 10.100.0.10
 2025-11-02T18:17:21.202923-0700 | SUCCESS | ========== ZTP CONFIGURATION COMPLETE ==========
+2025-11-02T18:28:30.929746-0700 | INFO | ========== ZTP SERVICE STARTED ==========
+2025-11-02T18:28:30.930697-0700 | INFO | Discovered 1 devices to configure: ['R8']
+2025-11-02T18:28:30.931486-0700 | INFO | [R8] Watching for device to appear...
+2025-11-02T18:28:30.957603-0700 | INFO | [R8] Device is reachable at 10.100.0.10.
+2025-11-02T18:28:30.957864-0700 | INFO | [R8] Connecting to 10.100.0.10 ...
+2025-11-02T18:28:46.950284-0700 | ERROR | [R8] Failed to push config: 
+
+Pattern not detected: 'R5.*' in output.
+
+Things you might try to fix this:
+1. Adjust the regex pattern to better identify the terminating string. Note, in
+many situations the pattern is automatically based on the network device's prompt.
+2. Increase the read_timeout to a larger value.
+
+You can also look at the Netmiko session_log or debug log for more information.
+
+
+2025-11-02T18:28:46.951051-0700 | SUCCESS | ========== ZTP CONFIGURATION COMPLETE ==========
