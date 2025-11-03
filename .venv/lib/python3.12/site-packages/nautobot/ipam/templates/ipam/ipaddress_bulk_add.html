@@ -1,0 +1,26 @@
+{% extends 'generic/object_create.html' %}
+{% load static %}
+{% load form_helpers %}
+
+{% block title %}Bulk Add IP Addresses{% endblock %}
+
+{% block tabs %}
+    {% include 'ipam/inc/ipadress_edit_header.html' with active_tab='bulk_add' %}
+{% endblock %}
+
+{% block form %}
+    <div class="panel panel-default">
+        <div class="panel-heading"><strong>IP Addresses</strong></div>
+        <div class="panel-body">
+            {% render_field form.pattern %}
+            {% render_field model_form.namespace %}
+            {% render_field model_form.type %}
+            {% render_field model_form.status %}
+            {% render_field model_form.role %}
+            {% render_field model_form.dns_name %}
+            {% render_field model_form.description %}
+        </div>
+    </div>
+    {% include 'inc/tenancy_form_panel.html' %}
+    {% include 'inc/extras_features_edit_form_fields.html' with form=model_form %}
+{% endblock %}

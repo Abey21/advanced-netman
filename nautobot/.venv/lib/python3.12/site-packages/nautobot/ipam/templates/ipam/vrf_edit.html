@@ -1,0 +1,42 @@
+{% extends 'generic/object_create.html' %}
+{% load form_helpers %}
+
+{% block form %}
+    <div class="panel panel-default">
+        <div class="panel-heading"><strong>VRF</strong></div>
+        <div class="panel-body">
+            {% render_field form.name %}
+            {% render_field form.namespace %}
+            {% render_field form.rd %}
+            {% render_field form.status %}
+            {% render_field form.description %}
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading"><strong>Devices</strong></div>
+        <div class="panel-body">
+            {% render_field form.devices %}
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading"><strong>Virtual Machines</strong></div>
+        <div class="panel-body">
+            {% render_field form.virtual_machines %}
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading"><strong>Prefixes</strong></div>
+        <div class="panel-body">
+            {% render_field form.prefixes %}
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading"><strong>Route Targets</strong></div>
+        <div class="panel-body">
+            {% render_field form.import_targets %}
+            {% render_field form.export_targets %}
+        </div>
+    </div>
+    {% include 'inc/tenancy_form_panel.html' %}
+    {% include 'inc/extras_features_edit_form_fields.html' %}
+{% endblock %}

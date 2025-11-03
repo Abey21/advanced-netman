@@ -1,0 +1,7 @@
+{% extends 'dcim/device/base.html' %}
+{% load helpers %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script src="{% versioned_static 'js/connection_toggles.js' %}"></script>
+{% endblock javascript %}

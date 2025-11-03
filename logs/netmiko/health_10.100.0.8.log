@@ -1,0 +1,97 @@
+
+Last login: Tue Oct 14 02:01:00 2025 from 10.100.0.5
+
+R3>
+R3>terminal width 511
+Width set to 511 columns.
+R3>terminal length 0
+Pagination disabled.
+R3>
+R3>
+R3>enable
+R3#
+R3#show processes top once | grep Cpu
+%Cpu(s): 80.9 us, 17.7 sy,  0.0 ni,  0.7 id,  0.0 wa,  0.0 hi,  0.7 si,  0.0 st
+R3#
+R3#
+R3#show ip ospf neighbor
+Neighbor ID     Instance VRF      Pri State                  Dead Time   Address         Interface
+10.100.0.13     1        default  1   FULL/DR                00:00:30    10.30.0.1       Ethernet3
+R3#
+R3#
+R3#show ip bgp summary
+BGP summary information for VRF default
+Router identifier 10.100.0.8, local AS number 1
+Neighbor Status Codes: m - Under maintenance
+  Neighbor  V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc PfxAdv
+  10.70.0.2 4 2              62701     62677    0    0   37d00h Estab   6      6      7
+  10.80.0.2 4 1              62616     62671    0    0   37d00h Estab   12     12     12
+R3#
+R3#
+R3#show ip route
+
+VRF: default
+Source Codes:
+       C - connected, S - static, K - kernel,
+       O - OSPF, O IA - OSPF inter area, O E1 - OSPF external type 1,
+       O E2 - OSPF external type 2, O N1 - OSPF NSSA external type 1,
+       O N2 - OSPF NSSA external type2, O3 - OSPFv3,
+       O3 IA - OSPFv3 inter area, O3 E1 - OSPFv3 external type 1,
+       O3 E2 - OSPFv3 external type 2,
+       O3 N1 - OSPFv3 NSSA external type 1,
+       O3 N2 - OSPFv3 NSSA external type2, B - Other BGP Routes,
+       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
+       I L2 - IS-IS level 2, A B - BGP Aggregate,
+       A O - OSPF Summary, NG - Nexthop Group Static Route,
+       V - VXLAN Control Service, M - Martian,
+       DH - DHCP client installed default route,
+       DP - Dynamic Policy Route, L - VRF Leaked,
+       G  - gRIBI, RC - Route Cache Route,
+       CL - CBF Leaked Route
+
+Gateway of last resort is not set
+
+ O E2     1.1.1.0/30 [110/1]
+           via 10.30.0.1, Ethernet3
+ O E2     5.5.5.5/32 [110/1]
+           via 10.30.0.1, Ethernet3
+ O        10.0.0.0/30 [110/20]
+           via 10.30.0.1, Ethernet3
+ O        10.10.0.0/30 [110/20]
+           via 10.30.0.1, Ethernet3
+ C        10.30.0.0/30
+           directly connected, Ethernet3
+ O        10.40.0.0/30 [110/30]
+           via 10.30.0.1, Ethernet3
+ O        10.50.0.0/30 [110/30]
+           via 10.30.0.1, Ethernet3
+ B E      10.60.0.0/30 [200/0]
+           via 10.70.0.2, Ethernet2
+ C        10.70.0.0/30
+           directly connected, Ethernet2
+ C        10.80.0.0/30
+           directly connected, Ethernet1
+ C        10.100.0.0/24
+           directly connected, Ethernet4
+ O        21.0.0.0/24 [110/30]
+           via 10.30.0.1, Ethernet3
+ O        22.0.0.0/24 [110/30]
+           via 10.30.0.1, Ethernet3
+ C        172.20.20.0/24
+           directly connected, Management0
+
+R3#
+R3#
+R3#ping 1.1.1.2
+PING 1.1.1.2 (1.1.1.2) 72(100) bytes of data.
+80 bytes from 1.1.1.2: icmp_seq=1 ttl=63 time=6.39 ms
+80 bytes from 1.1.1.2: icmp_seq=2 ttl=63 time=4.95 ms
+80 bytes from 1.1.1.2: icmp_seq=3 ttl=63 time=3.15 ms
+80 bytes from 1.1.1.2: icmp_seq=4 ttl=63 time=2.55 ms
+80 bytes from 1.1.1.2: icmp_seq=5 ttl=63 time=6.27 ms
+
+--- 1.1.1.2 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 24ms
+rtt min/avg/max/mdev = 2.546/4.661/6.394/1.576 ms, ipg/ewma 6.032/5.525 ms
+R3#
+R3#exit

@@ -1,0 +1,17 @@
+[run]
+source = scripts
+branch = True
+omit =
+    */test_*.py
+    */.venv/*
+    Jenkinsfile
+
+[report]
+show_missing = True
+
+[html]
+directory = coverage_html
+
+[json]
+output = coverage.json
+pretty_print = True

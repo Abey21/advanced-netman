@@ -1,0 +1,76 @@
+{% extends 'generic/object_create.html' %}
+{% load static %}
+{% load form_helpers %}
+{% load helpers %}
+
+{% block title %}Assign an IP address{% endblock %}
+
+{% block content %}
+    <form action="#" method="get" class="form form-horizontal">
+        {% for field in form.hidden_fields %}
+            {{ field }}
+        {% endfor %}
+        {% for field_name, field_values in request.GET.lists %}
+            {% if field_name != 'q' %}
+                {% for field_value in field_values %}
+                    <input type="hidden" name="{{ field_name }}" value="{{ field_value }}" />
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <h3>Assign an IP Address</h3>
+                {% include 'ipam/inc/ipadress_edit_header.html' with active_tab='assign' %}
+                {% if form.non_field_errors %}
+                    <div class="panel panel-danger">
+                        <div class="panel-heading"><strong>Errors</strong></div>
+                        <div class="panel-body">
+                            {{ form.non_field_errors }}
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="panel panel-default">
+                    <div class="panel-heading"><strong>Select IP Address</strong></div>
+                    <div class="panel-body">
+                        {% render_field form.q %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1 text-right">
+                <button type="submit" class="btn btn-primary">Search</button>
+                <a href="{{ return_url }}" class="btn btn-default">Cancel</a>
+            </div>
+        </div>
+    </form>
+    {% if table %}
+        <div class="row">
+            <form action="{% legacy_querystring request %}" method="post" class="form form-horizontal">
+                {% csrf_token %}
+                <div class="col-md-12" style="margin-top: 20px">
+                    <h3>Search Results</h3>
+                    {% include 'utilities/obj_table.html' with table_template='panel_table.html' disable_pagination=True %}
+                    <div class="pull-left noprint">
+                        {% if perms.dcim.change_interface %}
+                            <button type="submit" name="_edit" formaction="#" class="btn btn-primary btn-sm">
+                                <span class="mdi mdi-clipboard-tick" aria-hidden="true"></span> Assign Selected IPAddresses to Interface
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+            {% include 'inc/paginator.html' with paginator=table.paginator page=table.page %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block javascript %}
+    <script>
+        var clipboard = new ClipboardJS('.btn');
+
+        clipboard.on('success', function (e) {console.log("success")});
+
+        clipboard.on('error', function (e) {console.log("failed")});
+    </script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'users/base.html' %}
+{% load helpers %}
+{% load form_helpers %}
+
+{% block title %}User Preferences{% endblock %}
+
+{% block usercontent %}
+    {% if preferences %}
+        <form method="post" action="">
+            {% csrf_token %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" class="toggle" title="Toggle all"></th>
+                        <th>Preference</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in preferences.items %}
+                        <tr>
+                            <td class="min-width"><input type="checkbox" name="pk" value="{{ key }}"></td>
+                            <td><samp>{{ key }}</samp></td>
+                            <td><samp>{{ value }}</samp></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-danger">
+                <span class="mdi mdi-trash-can-outline" aria-hidden="true"></span> Clear Selected
+            </button>
+        </form>
+    {% else %}
+        <h3 class="text-muted text-center">No preferences found</h3>
+    {% endif %}
+
+    <form action="" method="post" class="form form-horizontal" style="margin-top: 30px;">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="panel panel-danger">
+                <div class="panel-heading"><strong>Errors</strong></div>
+                <div class="panel-body">
+                    {{ form.non_field_errors }}
+                </div>
+            </div>
+        {% endif %}
+        <div class="panel panel-default">
+            <div class="panel-heading"><strong>Preference Settings</strong></div>
+            <div class="panel-body">
+                {% render_field form.timezone %}
+            </div>
+        </div>
+        <div class="text-right">
+            <button type="submit" name="_update_preference_form" class="btn btn-primary">Update</button>
+        </div>
+    </form>
+{% endblock %}

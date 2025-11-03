@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""
+Seed Nautobot from a CSV of devices.
+
+CSV headers:
+  location_type,location,device_role,manufacturer,device_type,platform,
+  device_name,mgmt_ip,mgmt_mask,mgmt_iface
+"""
+
+import os, sys, csv, json, requests
+
+NAUTOBOT_URL   = os.environ.get("NAUTOBOT_URL", "http://127.0.0.1:8080").rstrip("/")
+NAUTOBOT_TOKEN = os.environ.get("NAUTOBOT_TOKEN")
+if not NAUTOBOT_TOKEN:
+    print("ERROR: NAUTOBOT_TOKEN not set", file=sys.stderr); sys.exit(1)
+
+s = requests.Session()
+s.headers.update({
+    "Authorization": f"Token {NAUTOBOT_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+})
+s.verify = True  # set False if using self-signed TLS
+
+def _get_one(path, params=None):
+    r = s.get(f"{NAUTOBOT_URL}{path}", params=params or {})
+    r.raise_for_status()
+    data = r.json()
+    if isinstance(data, dict) and "results" in data:
+        return data["results"][0] if data.get("count", 0) else None
+    return data or None
+
+def _list_all(path, params=None):
+    url = f"{NAUTOBOT_URL}{path}"
+    params = dict(params or {})
+    out = []
+    while True:
+        r = s.get(url, params=params)
+        r.raise_for_status()
+        data = r.json()
+        if isinstance(data, dict) and "results" in data:
+            out.extend(data["results"])
+            if data.get("next"):
+                url = data["next"]; params = {}; continue
+        else:
+            if isinstance(data, list): out.extend(data)
+        break
+    return out
+
+def _post(path, payload):
+    r = s.post(f"{NAUTOBOT_URL}{path}", data=json.dumps(payload))
+    if r.status_code not in (200, 201):
+        raise requests.HTTPError(f"{r.status_code} {r.text}")
+    return r.json()
+
+def _patch(path, payload):
+    r = s.patch(f"{NAUTOBOT_URL}{path}", data=json.dumps(payload))
+    if r.status_code not in (200, 201):
+        raise requests.HTTPError(f"{r.status_code} {r.text}")
+    return r.json()
+
+def _ensure(list_path, create_path, find_params, create_payload):
+    existing = _get_one(list_path, find_params)
+    if existing:
+        return existing["id"], existing
+    created = _post(create_path, create_payload)
+    return created["id"], created
+
+# ---- Status: Active ----
+def ensure_status_active():
+    required_cts = ["dcim.location", "dcim.device", "ipam.ipaddress"]
+    for st in _list_all("/api/extras/statuses/"):
+        if (st.get("slug") == "active") or (st.get("name","").lower() == "active"):
+            have = st.get("content_types", [])
+            if have and isinstance(have[0], dict):
+                have = [f"{ct.get('app_label')}.{ct.get('model')}" for ct in have if ct.get('app_label') and ct.get('model')]
+            if set(have) != set(required_cts):
+                _patch(f"/api/extras/statuses/{st['id']}/", {"content_types": required_cts})
+            return st["id"]
+    created = _post("/api/extras/statuses/", {
+        "name": "Active", "slug": "active", "color": "198754",
+        "content_types": required_cts
+    })
+    return created["id"]
+
+# ---- Ensure primitives ----
+def ensure_location_type(name):
+    return _ensure("/api/dcim/location-types/", "/api/dcim/location-types/",
+                   {"name": name}, {"name": name, "content_types": []})[0]
+
+def ensure_location(name, location_type_id, status_id):
+    found = _get_one("/api/dcim/locations/", {"name": name})
+    if found: return found["id"], found
+    return _post("/api/dcim/locations/", {
+        "name": name, "location_type": location_type_id, "status": status_id
+    })["id"], {}
+
+def ensure_role(name, color="9e9e9e"):
+    # Nautobot 2.x -> roles live at /api/dcim/roles/ (not /device-roles/)
+    # To make it a device-role, include content_types=["dcim.device"]
+    payload = {
+        "name": name,
+        "slug": name.lower().replace(" ","-"),
+        "color": color,
+        "content_types": ["dcim.device"],
+    }
+    return _ensure("/api/dcim/roles/", "/api/dcim/roles/", {"name": name}, payload)[0]
+
+def ensure_manufacturer(name):
+    return _ensure("/api/dcim/manufacturers/", "/api/dcim/manufacturers/",
+                   {"name": name}, {"name": name, "slug": name.lower().replace(" ","-")})[0]
+
+def ensure_device_type(model, manufacturer_id):
+    return _ensure("/api/dcim/device-types/", "/api/dcim/device-types/",
+                   {"model": model}, {"model": model, "manufacturer": manufacturer_id})[0]
+
+def ensure_platform(name, manufacturer_id=None):
+    payload = {"name": name, "slug": name.lower().replace(" ","-")}
+    if manufacturer_id: payload["manufacturer"] = manufacturer_id
+    return _ensure("/api/dcim/platforms/", "/api/dcim/platforms/", {"name": name}, payload)[0]
+
+def ensure_device(name, device_type_id, role_id, location_id, status_id, platform_id=None):
+    found = _get_one("/api/dcim/devices/", {"name": name})
+    if found: return found["id"], found
+    payload = {
+        "name": name, "device_type": device_type_id, "role": role_id,
+        "location": location_id, "status": status_id
+    }
+    if platform_id: payload["platform"] = platform_id
+    created = _post("/api/dcim/devices/", payload)
+    return created["id"], created
+
+def ensure_interface(device_id, iface_name, iface_type="virtual"):
+    found = _get_one("/api/dcim/interfaces/", {"device_id": device_id, "name": iface_name})
+    if found: return found["id"], found
+    created = _post("/api/dcim/interfaces/", {"device": device_id, "name": iface_name, "type": iface_type})
+    return created["id"], created
+
+def ensure_ip(address, interface_id=None, status_id=None):
+    found = _get_one("/api/ipam/ip-addresses/", {"address": address})
+    if found:
+        if interface_id and not found.get("assigned_object_id"):
+            patch = {"assigned_object_type": "dcim.interface", "assigned_object_id": interface_id}
+            if status_id: patch["status"] = status_id
+            _patch(f"/api/ipam/ip-addresses/{found['id']}/", patch)
+        return found["id"], found
+    payload = {"address": address}
+    if status_id: payload["status"] = status_id
+    if interface_id:
+        payload["assigned_object_type"] = "dcim.interface"
+        payload["assigned_object_id"] = interface_id
+    created = _post("/api/ipam/ip-addresses/", payload)
+    return created["id"], created
+
+def set_primary_ip4(device_id, ip_id):
+    _patch(f"/api/dcim/devices/{device_id}/", {"primary_ip4": ip_id})
+
+def main():
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} /path/to/devices.csv", file=sys.stderr)
+        sys.exit(2)
+
+    rows = []
+    with open(sys.argv[1], newline="") as f:
+        rows = list(csv.DictReader(f))
+
+    active_status_id = ensure_status_active()
+
+    for i, row in enumerate(rows, 1):
+        try:
+            lt   = (row.get("location_type") or "").strip()
+            loc  = (row.get("location") or "").strip()
+            role = (row.get("device_role") or "router").strip()
+            mfr  = (row.get("manufacturer") or "Arista").strip()
+            model= (row.get("device_type") or "vEOS").strip()
+            plat = (row.get("platform") or "arista_eos").strip()
+            name = (row.get("device_name") or "").strip()
+            ip   = (row.get("mgmt_ip") or "").strip()
+            mask = (row.get("mgmt_mask") or "24").strip()
+            iface= (row.get("mgmt_iface") or "Management0").strip()
+
+            if not (lt and loc and name and ip):
+                print(f"[{i}] SKIP (missing fields) -> {row}")
+                continue
+
+            print(f"[{i}] {name}: creating/ensuring objects…")
+            lt_id   = ensure_location_type(lt)
+            loc_id, _ = ensure_location(loc, lt_id, active_status_id)
+            role_id = ensure_role(role)
+            mfr_id  = ensure_manufacturer(mfr)
+            dt_id   = ensure_device_type(model, mfr_id)
+            plat_id = ensure_platform(plat, mfr_id)
+
+            dev_id, _ = ensure_device(name, dt_id, role_id, loc_id, active_status_id, plat_id)
+            intf_id, _ = ensure_interface(dev_id, iface, "virtual")
+            ip_id, _   = ensure_ip(f"{ip}/{mask}", intf_id, active_status_id)
+            set_primary_ip4(dev_id, ip_id)
+
+            print(f"    OK -> {name} {iface} {ip}/{mask}")
+
+        except requests.HTTPError as he:
+            print(f"[{i}] HTTP ERROR: {he}", file=sys.stderr)
+        except Exception as e:
+            print(f"[{i}] ERROR: {e}", file=sys.stderr)
+
+    print("Done.")
+
+if __name__ == "__main__":
+    main()

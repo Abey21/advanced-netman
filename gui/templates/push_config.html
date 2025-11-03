@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Push Config</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body{background:#0b0d12;color:#e6e6e6}
+    .card{background:#121826;border:1px solid #1f2937;margin-top:20px}
+    .navbar{background:#121826;border-bottom:1px solid #1f2937}
+    .navbar .navbar-brand,.navbar .nav-link{color:#e6e6e6!important}
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <a class="navbar-brand" href="/">NSoT</a>
+  <div class="collapse navbar-collapse">
+    <ul class="navbar-nav">
+      <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+      <li class="nav-item"><a class="nav-link" href="/add-device">Add Device</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+  <div id="msg"></div>
+  <div class="card">
+    <div class="card-body">
+      <h4 class="card-title">Push Config to Device</h4>
+      <form id="pushForm" method="POST" action="/push-config">
+        <div class="form-group">
+          <label>Hostname</label>
+          <input type="text" class="form-control" name="hostname" placeholder="R6" required>
+        </div>
+        <div class="form-group">
+          <label>Management IP</label>
+          <input type="text" class="form-control" name="mgmt_ip" placeholder="172.20.20.16" required>
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" class="form-control" name="username" value="admin" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" class="form-control" name="password" value="admin" required>
+        </div>
+        <div class="form-group">
+          <label>Select Config File</label>
+          <select class="form-control" name="config_file" required>
+            {% for f in config_files %}
+              <option value="{{ f }}">{{ f }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-success">Push Config</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('pushForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const form = e.target;
+  const data = new FormData(form);
+  const resp = await fetch(form.action, {method:'POST', body:data});
+  const json = await resp.json();
+  const msg = document.getElementById('msg');
+  if (json.status === 'ok')
+    msg.innerHTML = `<div class="alert alert-success mt-3">✅ ${json.message}</div>`;
+  else
+    msg.innerHTML = `<div class="alert alert-danger mt-3">❌ ${json.message}</div>`;
+});
+</script>
+</body>
+</html>

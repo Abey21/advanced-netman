@@ -1,13 +1,18 @@
-import os, glob, subprocess, yaml
+import os
+import glob
+import subprocess
+import yaml
 from flask import Flask, render_template, request, redirect, jsonify
+from netmiko import ConnectHandler
 
 # ---------- Paths (repo-relative) ----------
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(HERE, ".."))
 DATA_DEVICES_DIR = os.path.join(REPO_ROOT, "data", "devices")
-GENERATED_CONFIGS_DIR = os.path.join(REPO_ROOT, "generated-configs")
+GENERATED_CONFIGS_DIR = os.path.join(REPO_ROOT, "startup_configs")
 TEMPLATES_DIR = os.path.join(REPO_ROOT, "templates")
 SCRIPT_PATH = os.path.join(REPO_ROOT, "generate_config.py")
+
 os.makedirs(DATA_DEVICES_DIR, exist_ok=True)
 os.makedirs(GENERATED_CONFIGS_DIR, exist_ok=True)
 
@@ -17,6 +22,8 @@ GRAFANA_DASH_UID = os.environ.get("GRAFANA_DASH_UID", "xf6o9HCHk")  # replace wi
 
 app = Flask(__name__)
 
+
+# ---------- Utility ----------
 def list_devices():
     rows = []
     for y in sorted(glob.glob(os.path.join(DATA_DEVICES_DIR, "*.yaml"))):
@@ -34,36 +41,45 @@ def list_devices():
             pass
     return rows
 
+
+def clean_empty_fields(x):
+    return None if (x is None or str(x).strip() == "") else x
+
+
+# ---------- Routes ----------
 @app.route("/")
 def index():
     devices = list_devices()
     grafana_iframe = f"{GRAFANA_URL}/d/{GRAFANA_DASH_UID}/device-status?orgId=1&refresh=5s"
     return render_template("index.html", devices=devices, grafana_iframe=grafana_iframe)
 
+
 @app.route("/grafana")
 def grafana():
     return redirect(f"{GRAFANA_URL}/d/{GRAFANA_DASH_UID}/device-status?orgId=1&refresh=5s")
 
-def clean_empty_fields(x):
-    return None if (x is None or str(x).strip() == "") else x
 
 @app.route('/add-device', methods=['GET', 'POST'])
 def add_device():
     if request.method == 'GET':
-        return render_template('add_device.html',
-                               vendors=['arista_eos', 'cisco_ios', 'juniper_junos'])
+        return render_template(
+            'add_device.html',
+            vendors=['arista_eos', 'cisco_ios', 'juniper_junos']
+        )
+
     # POST
-    router_type = request.form.get('routerType', '').strip()   # Access or Core
+    router_type = request.form.get('routerType', '').strip()  # Access or Core
     if not router_type:
-        return jsonify({'status':'error','message':'Select Access or Core'}), 400
+        return jsonify({'status': 'error', 'message': 'Select Access or Core'}), 400
 
     device = {
-        "name": request.form.get('deviceName','').strip(),
-        "vendor": request.form.get('vendor','').strip(),
-        "mgmt_ip": request.form.get('wanIp','').strip(),
+        "name": request.form.get('deviceName', '').strip(),
+        "vendor": request.form.get('vendor', '').strip(),
+        "mgmt_ip": request.form.get('wanIp', '').strip(),
         "site": clean_empty_fields(request.form.get('site'))
     }
 
+    # ----- Access Router -----
     if router_type == 'Access':
         device.update({
             'vlans': [
@@ -123,6 +139,7 @@ def add_device():
         })
         yaml_path = os.path.join(DATA_DEVICES_DIR, f"{device['name']}_access.yaml")
 
+    # ----- Core Router -----
     elif router_type == 'Core':
         device.update({
             'vlans': [
@@ -189,15 +206,53 @@ def add_device():
     try:
         subprocess.run(["python3", SCRIPT_PATH, "--config", yaml_path], cwd=REPO_ROOT, check=True)
     except subprocess.CalledProcessError as e:
-        return jsonify({'status':'error','message':f'Generator failed: {e}'}), 500
+        return jsonify({'status': 'error', 'message': f'Generator failed: {e}'}), 500
 
     # Commit & push (best effort; will silently no-op if nothing to commit)
     subprocess.run(["git", "add", "."], cwd=REPO_ROOT)
     subprocess.run(["git", "commit", "-m", f"add: {device['name']} {router_type} yaml+cfg"], cwd=REPO_ROOT)
     subprocess.run(["git", "push"], cwd=REPO_ROOT)
 
-    return jsonify({"status":"ok","yaml":os.path.basename(yaml_path)})
+    return jsonify({"status": "ok", "yaml": os.path.basename(yaml_path)})
 
+
+# ---------- NEW: Push Config Page ----------
+@app.route("/push-config", methods=["GET", "POST"])
+def push_config():
+    if request.method == "GET":
+        cfgs = [os.path.basename(f) for f in glob.glob(os.path.join(GENERATED_CONFIGS_DIR, "*.cfg"))]
+        return render_template("push_config.html", config_files=cfgs)
+
+    # POST
+    host = request.form["mgmt_ip"].strip()
+    user = request.form["username"].strip()
+    pw = request.form["password"].strip()
+    cfg_file = request.form["config_file"].strip()
+    full_path = os.path.join(GENERATED_CONFIGS_DIR, cfg_file)
+
+    if not os.path.exists(full_path):
+        return jsonify({"status": "error", "message": "Config file not found."}), 400
+
+    try:
+        conn = ConnectHandler(
+            device_type="arista_eos",  # Change per device if multi-vendor support later
+            host=host,
+            username=user,
+            password=pw,
+        )
+        with open(full_path) as f:
+            cfg = f.read().splitlines()
+        conn.enable()
+        output = conn.send_config_set(cfg)
+        conn.save_config()
+        conn.disconnect()
+        print(output)
+        return jsonify({"status": "ok", "message": f"Configuration pushed successfully to {host}"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+# ---------- Main ----------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=True)

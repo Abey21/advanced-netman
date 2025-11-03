@@ -1,0 +1,11 @@
+location_type,location,device_role,platform,manufacturer,device_type,device_name,mgmt_ip,mgmt_mask,mgmt_iface,asn
+Lab,containerlab,router,arista_eos,Arista,EOS-vEOS,R1,10.100.0.7,24,Management0,
+Lab,containerlab,router,arista_eos,Arista,EOS-vEOS,R2,10.100.0.6,24,Management0,
+Lab,containerlab,router,arista_eos,Arista,EOS-vEOS,R3,10.100.0.8,24,Management0,
+Lab,containerlab,router,arista_eos,Arista,EOS-vEOS,R4,10.100.0.9,24,Management0,
+Lab,containerlab,router,arista_eos,Arista,EOS-vEOS,R5,10.100.0.10,24,Management0,
+Lab,containerlab,switch,arista_eos,Arista,EOS-vEOS,S1,10.100.0.11,24,Management0,
+Lab,containerlab,switch,arista_eos,Arista,EOS-vEOS,S2,10.100.0.12,24,Management0,
+Lab,containerlab,switch,arista_eos,Arista,EOS-vEOS,S3,10.100.0.13,24,Management0,
+Lab,containerlab,switch,arista_eos,Arista,EOS-vEOS,S4,10.100.0.14,24,Management0,
+Lab,containerlab,switch,arista_eos,Arista,EOS-vEOS,S5,10.100.0.15,24,Management0,
